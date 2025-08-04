@@ -1,4 +1,4 @@
-# 🚀 AG2 Enhanced Documentation Flow
+# 🚀 Skyone AG2 Enhanced Documentation Flow
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
@@ -217,8 +217,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **Documentation**: [GITHUB_SETUP.md](GITHUB_SETUP.md)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/ag2-enhanced-documentation-flow/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/ag2-enhanced-documentation-flow/discussions)
 
 ---
 
