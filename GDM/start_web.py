@@ -24,11 +24,17 @@ def check_requirements():
     
     print(f"✅ Python {sys.version.split()[0]}")
     
+    # Ensure we're working from the script's directory
+    script_dir = Path(__file__).parent.absolute()
+    os.chdir(script_dir)
+    print(f"📁 Working directory: {script_dir}")
+    
     # Check if we're in the right directory
     required_files = ["app.py", "frontend.html", "config.py", "agents.py", "tools.py"]
     for file in required_files:
-        if not Path(file).exists():
-            print(f"❌ Required file not found: {file}")
+        file_path = script_dir / file
+        if not file_path.exists():
+            print(f"❌ Required file not found: {file} (looked in {file_path})")
             return False
     
     print("✅ Project files found")
@@ -128,9 +134,11 @@ def main():
     print("-" * 60)
     
     try:
-        # Start the server
+        # Start the server using absolute path
+        script_dir = Path(__file__).parent.absolute()
+        app_path = script_dir / "app.py"
         process = subprocess.Popen([
-            sys.executable, "app.py",
+            sys.executable, str(app_path),
             "--host", host,
             "--port", str(port)
         ])
