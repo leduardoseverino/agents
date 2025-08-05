@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DocAgent Skyone - Análise Automática com AG2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e40af',
+                        secondary: '#3b82f6',
+                        accent: '#0ea5e9'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Overlay de Login -->
+    <div id="loginOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-8 shadow-lg w-full max-w-md">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-robot text-white text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800">DocAgent Skyone</h3>
+                <p class="text-gray-600">Faça login para continuar</p>
+            </div>
+            
+            <div class="space-y-4">
+                <input type="text" id="loginUsername" placeholder="Usuário" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors" />
+                <input type="password" id="loginPassword" placeholder="Senha" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors" />
+                
+                <button type="button" onclick="realizarLogin()" 
+                        class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    Entrar
+                </button>
+                
+                <div class="text-center">
+                    <p class="text-sm text-gray-500 mb-3">ou</p>
+                    <button type="button" onclick="loginGitHub()" 
+                            class="w-full bg-gray-800 text-white px-4 py-3 rounded-lg hover:bg-gray-900 transition-all duration-200 flex items-center justify-center">
+                        <i class="fab fa-github mr-2"></i> 
+                        Entrar com GitHub
+                    </button>
+                </div>
+                
+                <p id="loginError" class="text-red-600 text-sm mt-2 hidden"></p>
+                
+                <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <h4 class="font-semibold text-blue-800 mb-2">👤 Contas de Demo:</h4>
+                    <div class="text-blue-700 text-sm space-y-1">
+                        <div>• <strong>admin</strong> / admin123</div>
+                        <div>• <strong>user</strong> / user123</div>
+                        <div>• <strong>demo</strong> / demo123</div>
+                        <div class="text-xs mt-2 text-blue-600">
+                            Ou qualquer usuário/senha não vazios
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b border-blue-100">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-robot text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">DocAgent Skyone</h1>
+                        <p class="text-sm text-gray-600">Análise Automática com AG2</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="userInfo" class="hidden px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                        <i class="fas fa-user mr-1"></i>
+                        <span id="currentUser">Usuário</span>
+                    </span>
+                    <span id="systemStatus" class="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-sm font-medium">
+                        <i class="fas fa-circle animate-pulse mr-1"></i>
+                        Carregando...
+                    </span>
+                    <span id="ag2Status" class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                        <i class="fas fa-robot mr-1"></i>
+                        AG2 Status
+                    </span>
+                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                        <i class="fas fa-shield-alt mr-1"></i>
+                        Relatórios Anônimos
+                    </span>
+                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                        v2.0
+                    </span>
+                    <button id="logoutBtn" onclick="realizarLogout()" 
+                            class="hidden px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium hover:bg-red-200 transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>
+                        Sair
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        
+        <!-- Hero Section -->
+        <div class="text-center mb-12">
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl p-8 mb-8 text-white shadow-2xl">
+                <h2 class="text-5xl font-bold mb-6">
+                    <i class="fas fa-robot mr-4 animate-pulse"></i>
+                    DocAgent Skyone
+                    <span class="block text-3xl font-normal text-blue-200 mt-2">Sistema AG2 Multi-Agent</span>
+                </h2>
+                <p class="text-xl text-blue-100 max-w-4xl mx-auto leading-relaxed">
+                    Plataforma avançada que utiliza inteligência artificial AG2 para análise técnica completa de repositórios GitHub.
+                    Gera relatórios anônimos profissionais com documentação técnica detalhada e download em ZIP.
+                </p>
+                
+                <!-- Feature highlights -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <i class="fas fa-robot text-2xl text-yellow-300 mb-2"></i>
+                        <div class="font-semibold">4 Agentes IA</div>
+                        <div class="text-sm text-blue-200">Análise colaborativa</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <i class="fas fa-shield-alt text-2xl text-green-300 mb-2"></i>
+                        <div class="font-semibold">100% Anônimo</div>
+                        <div class="text-sm text-blue-200">Dados protegidos</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <i class="fas fa-file-archive text-2xl text-orange-300 mb-2"></i>
+                        <div class="font-semibold">Download ZIP</div>
+                        <div class="text-sm text-blue-200">Todos os arquivos</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <i class="fas fa-clock text-2xl text-purple-300 mb-2"></i>
+                        <div class="font-semibold">Tempo Real</div>
+                        <div class="text-sm text-blue-200">Logs ao vivo</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Section -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-search text-blue-600 text-2xl mr-3"></i>
+                <h3 class="text-2xl font-bold text-gray-800">Busca Automática de Repositórios</h3>
+            </div>
+            
+            <!-- Enhanced AG2 System Info -->
+            <div class="mb-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200 shadow-lg">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-robot text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-purple-800 text-lg">Sistema AG2 Enhanced</h4>
+                        <p class="text-purple-600 text-sm">Inteligência Artificial Multi-Agent</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="space-y-2">
+                        <div class="flex items-center text-purple-700">
+                            <i class="fas fa-users text-purple-600 mr-2"></i>
+                            <strong>4 Agentes Especializados:</strong> Análise colaborativa
+                        </div>
+                        <div class="flex items-center text-purple-700">
+                            <i class="fas fa-tools text-purple-600 mr-2"></i>
+                            <strong>5 Tools Avançadas:</strong> Análise técnica profunda
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center text-purple-700">
+                            <i class="fas fa-shield-alt text-green-600 mr-2"></i>
+                            <strong>Relatórios Anônimos:</strong> Proteção total
+                        </div>
+                        <div class="flex items-center text-purple-700">
+                            <i class="fas fa-download text-blue-600 mr-2"></i>
+                            <strong>Download ZIP:</strong> Todos os arquivos
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="testarComMicrosoft()" class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-md">
+                        <i class="fab fa-microsoft mr-1"></i> Testar: Microsoft
+                    </button>
+                    <button onclick="testarComGoogle()" class="bg-gradient-to-r from-red-500 to-orange-500 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-md">
+                        <i class="fab fa-google mr-1"></i> Testar: Google
+                    </button>
+                    <button onclick="testarComFacebook()" class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-md">
+                        <i class="fab fa-facebook mr-1"></i> Testar: Facebook
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Seção de autenticação GitHub opcional -->
+            <div class="mb-6">
+                <label for="githubToken" class="block text-sm font-medium text-gray-700 mb-2">
+                    Token de Acesso do GitHub (opcional para repositórios privados)
+                </label>
+                <div class="flex">
+                    <input type="password" id="githubToken" placeholder="Personal Access Token" class="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors" />
+                    <button type="button" onclick="autenticarGit()" class="bg-green-600 text-white px-4 py-3 rounded-r-lg hover:bg-green-700 transition-all duration-200">
+                        Autenticar
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Seu token será usado apenas para esta sessão.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2">
+                    <label for="usuario" class="block text-sm font-medium text-gray-700 mb-2">
+                        Nome do Usuário/Organização ou URL Completa do GitHub
+                    </label>
+                    <input type="text" id="usuario" placeholder="Ex: microsoft, google, ou https://github.com/facebook/react"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+                    <div id="inputFeedback" class="mt-2 text-sm hidden">
+                        <!-- Feedback será inserido aqui -->
+                    </div>
+                </div>
+                <div class="flex flex-col justify-end">
+                    <label class="flex items-center mb-3">
+                        <input type="checkbox" id="incluirForks" class="mr-2 h-4 w-4 text-blue-600">
+                        <span class="text-sm text-gray-700">Incluir Forks</span>
+                    </label>
+                    <label class="flex items-center mb-3">
+                        <input type="checkbox" id="modoAnonimo" class="mr-2 h-4 w-4 text-blue-600" checked>
+                        <span class="text-sm text-gray-700">Relatório Anônimo</span>
+                    </label>
+                    <button onclick="buscarRepositorios()" id="btnBuscar"
+                            class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 transform hover:scale-105 font-medium">
+                        <i class="fas fa-search mr-2"></i>
+                        Buscar Repositórios
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden">
+            <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-gray-600 text-lg font-medium">Buscando repositórios...</p>
+                <p class="text-gray-500 text-sm mt-2">Isso pode levar alguns segundos</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden">
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-folder-open text-blue-600 mr-3"></i>
+                        Repositórios Encontrados
+                    </h3>
+                    <div class="flex space-x-4">
+                        <select id="filtroLinguagem" class="px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="">Todas as linguagens</option>
+                        </select>
+                        <select id="ordenacao" class="px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="stars">Mais estrelas</option>
+                            <option value="name">Nome</option>
+                            <option value="updated">Mais recente</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="repositoriosList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Repositórios serão inseridos aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Section -->
+        <div id="analysisSection" class="hidden">
+            <!-- AG2 Logs Section - Now Prominent -->
+            <div class="bg-gradient-to-r from-purple-900 to-blue-900 rounded-2xl shadow-2xl p-8 mb-8 text-white">
+                <h3 class="text-3xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-robot mr-4 text-4xl animate-pulse"></i>
+                    <div>
+                        <div>Sistema AG2 Multi-Agent</div>
+                        <div class="text-lg font-normal text-purple-200">Logs em Tempo Real</div>
+                    </div>
+                </h3>
+                
+                <!-- Status Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <div class="text-purple-200 text-sm font-medium">Fase Atual</div>
+                        <div id="phaseText" class="text-xl font-bold">Iniciando...</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <div class="text-blue-200 text-sm font-medium">Progresso</div>
+                        <div id="progressText" class="text-xl font-bold">0%</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <div class="text-green-200 text-sm font-medium">Etapa Atual</div>
+                        <div id="currentStep" class="text-lg font-medium">Aguardando...</div>
+                    </div>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="mb-6">
+                    <div class="w-full bg-white bg-opacity-20 rounded-full h-4 backdrop-blur">
+                        <div id="progressBar" class="bg-gradient-to-r from-green-400 to-blue-400 h-4 rounded-full transition-all duration-500 shadow-lg" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <!-- Status Message -->
+                <div id="statusMessage" class="text-lg text-purple-100 mb-4 p-3 bg-white bg-opacity-10 rounded-lg backdrop-blur"></div>
+                
+                <!-- Prominent Logs Display -->
+                <div class="bg-black bg-opacity-40 rounded-lg p-4 backdrop-blur border border-white border-opacity-20">
+                    <h4 class="font-bold text-lg mb-3 flex items-center">
+                        <i class="fas fa-terminal mr-2 text-green-400"></i>
+                        Logs dos Agentes AG2
+                        <span class="ml-auto text-sm text-gray-300">Tempo Real</span>
+                    </h4>
+                    <div id="logsContainer" class="max-h-64 overflow-y-auto">
+                        <div id="logs" class="text-sm font-mono text-green-300 whitespace-pre-wrap"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="analysisResults" class="hidden bg-white rounded-2xl shadow-xl p-8">
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">
+                    <i class="fas fa-file-alt text-green-600 mr-3"></i>
+                    Relatório AG2 Concluído
+                </h3>
+                <div id="resultsContent">
+                    <!-- Resultados serão inseridos aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+            <div class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-robot text-purple-600 text-xl"></i>
+                </div>
+                <h4 class="font-bold text-gray-800 mb-2">Sistema AG2</h4>
+                <p class="text-gray-600 text-sm">Multi-agent analysis com 4 agentes especializados</p>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-shield-alt text-green-600 text-xl"></i>
+                </div>
+                <h4 class="font-bold text-gray-800 mb-2">100% Anônimo</h4>
+                <p class="text-gray-600 text-sm">Relatórios completamente anonimizados, seguros para compartilhamento</p>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-code text-blue-600 text-xl"></i>
+                </div>
+                <h4 class="font-bold text-gray-800 mb-2">Análise Profunda</h4>
+                <p class="text-gray-600 text-sm">5 tools avançadas para análise técnica detalhada</p>
+            </div>
+            
+            <div class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+                    <i class="fas fa-download text-orange-600 text-xl"></i>
+                </div>
+                <h4 class="font-bold text-gray-800 mb-2">Relatórios Completos</h4>
+                <p class="text-gray-600 text-sm">Documentação técnica em formatos MD e JSON</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2024 DocAgent Skyone v2.0 - Sistema AG2 Multi-Agent</p>
+            <p class="text-gray-400 mt-2">Análise avançada • Relatórios anônimos • Tecnologia AG2 • Sistema de Autenticação</p>
+        </div>
+    </footer>
+
+    <script>
+        let repositorios = [];
+        let analysisInterval = null;
+        let ag2Available = false;
+        let isAuthenticated = false;
+        let currentUser = null;
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🤖 DocAgent Skyone v2.0 com AG2 e Autenticação carregado!');
+            // Verificar estado de login assim que a página carregar
+            verificarStatusAuth();
+            
+            // Enter key listener
+            document.getElementById('usuario').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    buscarRepositorios();
+                }
+            });
+
+            // Enter key para login
+            document.getElementById('loginUsername').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    realizarLogin();
+                }
+            });
+
+            document.getElementById('loginPassword').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    realizarLogin();
+                }
+            });
+        });
+
+        // Sistema de Autenticação
+        async function verificarStatusAuth() {
+            try {
+                const response = await fetch('/api/auth/status');
+                const data = await response.json();
+                
+                console.log('Status de autenticação:', data);
+                
+                if (data.authenticated) {
+                    // Usuário está logado
+                    isAuthenticated = true;
+                    mostrarInterfaceLogada();
+                    checkSystemStatus();
+                } else {
+                    // Usuário não está logado
+                    isAuthenticated = false;
+                    mostrarTelaLogin();
+                }
+            } catch (error) {
+                console.error('Erro ao verificar status de auth:', error);
+                // Em caso de erro, mostrar tela de login
+                mostrarTelaLogin();
+            }
+        }
+
+        function mostrarTelaLogin() {
+            const overlay = document.getElementById('loginOverlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+            }
+            
+            // Ocultar elementos da interface principal
+            ocultarElementosInterface();
+        }
+
+        function mostrarInterfaceLogada() {
+            const overlay = document.getElementById('loginOverlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+            
+            // Mostrar elementos da interface
+            mostrarElementosInterface();
+        }
+
+        function ocultarElementosInterface() {
+            const userInfo = document.getElementById('userInfo');
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (userInfo) userInfo.classList.add('hidden');
+            if (logoutBtn) logoutBtn.classList.add('hidden');
+        }
+
+        function mostrarElementosInterface() {
+            const userInfo = document.getElementById('userInfo');
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (userInfo) userInfo.classList.remove('hidden');
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
+            
+            // Atualizar nome do usuário se disponível
+            if (currentUser) {
+                const userSpan = document.getElementById('currentUser');
+                if (userSpan) {
+                    userSpan.textContent = currentUser;
+                }
+            }
+        }
+
+        // Função de login melhorada
+        async function realizarLogin() {
+            const usernameEl = document.getElementById('loginUsername');
+            const passwordEl = document.getElementById('loginPassword');
+            const errorEl = document.getElementById('loginError');
+            
+            const username = usernameEl ? usernameEl.value.trim() : '';
+            const password = passwordEl ? passwordEl.value.trim() : '';
+            
+            if (errorEl) {
+                errorEl.classList.add('hidden');
+                errorEl.textContent = '';
+            }
+            
+            if (!username || !password) {
+                if (errorEl) {
+                    errorEl.textContent = 'Por favor, preencha usuário e senha';
+                    errorEl.classList.remove('hidden');
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Login bem-sucedido
+                    isAuthenticated = true;
+                    currentUser = data.username || username;
+                    
+                    // Armazenar informações da sessão
+                    sessionStorage.setItem('docagent_session', JSON.stringify({
+                        authenticated: true,
+                        username: currentUser,
+                        session_id: data.session_id,
+                        login_time: new Date().toISOString()
+                    }));
+                    
+                    console.log('🔑 Login realizado com sucesso:', currentUser);
+                    
+                    // Mostrar interface logada
+                    mostrarInterfaceLogada();
+                    
+                    // Verificar status do sistema após login
+                    checkSystemStatus();
+                    
+                    // Limpar campos de login
+                    if (usernameEl) usernameEl.value = '';
+                    if (passwordEl) passwordEl.value = '';
+                    
+                } else {
+                    if (errorEl) {
+                        errorEl.textContent = data.message || 'Credenciais inválidas';
+                        errorEl.classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro no login:', error);
+                if (errorEl) {
+                    errorEl.textContent = 'Erro de conexão. Tente novamente.';
+                    errorEl.classList.remove('hidden');
+                }
+            }
+        }
+
+        // Função de logout
+        async function realizarLogout() {
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Logout bem-sucedido
+                    isAuthenticated = false;
+                    currentUser = null;
+                    
+                    // Limpar dados da sessão
+                    sessionStorage.removeItem('docagent_session');
+                    
+                    console.log('🔒 Logout realizado com sucesso');
+                    
+                    // Voltar para tela de login
+                    mostrarTelaLogin();
+                    
+                    // Resetar estado da aplicação
+                    resetarEstadoAplicacao();
+                } else {
+                    console.error('Erro no logout:', data.message);
+                }
+            } catch (error) {
+                console.error('Erro no logout:', error);
+                // Mesmo com erro, fazer logout local
+                isAuthenticated = false;
+                currentUser = null;
+                sessionStorage.removeItem('docagent_session');
+                mostrarTelaLogin();
+                resetarEstadoAplicacao();
+            }
+        }
+
+        function resetarEstadoAplicacao() {
+            // Limpar dados da aplicação
+            repositorios = [];
+            if (analysisInterval) {
+                clearInterval(analysisInterval);
+                analysisInterval = null;
+            }
+            
+            // Ocultar seções
+            const sections = ['results', 'analysisSection', 'loading'];
+            sections.forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.classList.add('hidden');
+                }
+            });
+            
+            // Limpar campos
+            const usuario = document.getElementById('usuario');
+            if (usuario) {
+                usuario.value = '';
+            }
+        }
+
+        // System status management
+        function checkSystemStatus() {
+            if (!isAuthenticated) {
+                return; // Não verificar status se não estiver logado
+            }
+            
+            fetch('/health')
+                .then(response => response.json())
+                .then(data => {
+                    updateSystemStatus(data.status);
+                    updateAG2Status(data.ag2_enabled);
+                    ag2Available = data.ag2_enabled;
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar status:', error);
+                    updateSystemStatus('error');
+                });
+        }
+
+        function updateSystemStatus(status) {
+            const statusElement = document.getElementById('systemStatus');
+            if (!statusElement) return;
+
+            switch(status) {
+                case 'healthy':
+                    statusElement.innerHTML = '<i class="fas fa-check-circle mr-1"></i>Sistema Pronto';
+                    statusElement.className = 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium';
+                    break;
+                case 'degraded':
+                    statusElement.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i>Limitado';
+                    statusElement.className = 'px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium';
+                    break;
+                case 'searching':
+                    statusElement.innerHTML = '<i class="fas fa-search animate-spin mr-1"></i>Buscando...';
+                    statusElement.className = 'px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium';
+                    break;
+                case 'analyzing':
+                    statusElement.innerHTML = '<i class="fas fa-robot animate-spin mr-1"></i>Analisando...';
+                    statusElement.className = 'px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium';
+                    break;
+                case 'error':
+                    statusElement.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i>Erro';
+                    statusElement.className = 'px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium';
+                    break;
+            }
+        }
+
+        function updateAG2Status(enabled) {
+            const ag2Element = document.getElementById('ag2Status');
+            if (!ag2Element) return;
+
+            if (enabled) {
+                ag2Element.innerHTML = '<i class="fas fa-robot mr-1"></i>AG2 Ativo';
+                ag2Element.className = 'px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium';
+            } else {
+                ag2Element.innerHTML = '<i class="fas fa-robot mr-1"></i>AG2 Off';
+                ag2Element.className = 'px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium';
+            }
+        }
+
+        // Test functions
+        function testarComMicrosoft() {
+            if (!isAuthenticated) {
+                alert('Por favor, faça login primeiro');
+                return;
+            }
+            document.getElementById('usuario').value = 'microsoft';
+            buscarRepositorios();
+        }
+
+        function testarComGoogle() {
+            if (!isAuthenticated) {
+                alert('Por favor, faça login primeiro');
+                return;
+            }
+            document.getElementById('usuario').value = 'google';
+            buscarRepositorios();
+        }
+        
+        function testarComFacebook() {
+            if (!isAuthenticated) {
+                alert('Por favor, faça login primeiro');
+                return;
+            }
+            document.getElementById('usuario').value = 'facebook';
+            buscarRepositorios();
+        }
+
+        // Função de autenticação do GitHub (mantida igual)
+        async function autenticarGit() {
+            const tokenInput = document.getElementById('githubToken');
+            const token = tokenInput ? tokenInput.value.trim() : '';
+            if (!token) {
+                alert('Por favor, insira o token de acesso do GitHub');
+                return;
+            }
+            try {
+                const response = await fetch('/api/auth/github', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token: token })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    alert('Token autenticado com sucesso!');
+                } else {
+                    alert(data.message || 'Falha ao autenticar token');
+                }
+            } catch (error) {
+                console.error('Erro ao autenticar token:', error);
+                alert('Erro ao autenticar token.');
+            }
+        }
+
+        // Inicia o fluxo OAuth abrindo uma nova janela para a página de autorização do GitHub
+        function loginGitHub() {
+            window.open('/login/github', '_blank', 'width=600,height=700');
+        }
+
+        // Listener para receber mensagens do popup de autenticação do GitHub
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'github_oauth') {
+                if (event.data.success) {
+                    alert('Autenticação com GitHub realizada com sucesso!');
+                    // Verificar status de autenticação após OAuth
+                    verificarStatusAuth();
+                } else {
+                    alert('Falha na autenticação com GitHub');
+                }
+            }
+        });
+
+        // Main search function - atualizada com verificação de autenticação
+        async function buscarRepositorios() {
+            if (!isAuthenticated) {
+                alert('Por favor, faça login primeiro');
+                mostrarTelaLogin();
+                return;
+            }
+            
+            const usuarioInput = document.getElementById('usuario');
+            const incluirForksInput = document.getElementById('incluirForks');
+            const btnBuscar = document.getElementById('btnBuscar');
+            
+            const usuario = usuarioInput.value.trim();
+            const incluirForks = incluirForksInput.checked;
+            
+            if (!usuario) {
+                alert('Por favor, digite o nome do usuário/organização ou URL do repositório');
+                usuarioInput.focus();
+                return;
+            }
+
+            console.log(`🔍 Buscando repositórios para: ${usuario}`);
+            updateSystemStatus('searching');
+
+            // UI updates
+            btnBuscar.disabled = true;
+            btnBuscar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Buscando...';
+            
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        usuario: usuario,
+                        incluir_forks: incluirForks
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    repositorios = data.repositories;
+                    console.log(`✅ ${repositorios.length} repositórios encontrados`);
+                    
+                    if (repositorios.length === 0) {
+                        mostrarMensagemNenhumRepo(usuario);
+                    } else {
+                        mostrarRepositorios(repositorios);
+                        popularFiltroLinguagens();
+                    }
+                    
+                    updateSystemStatus('healthy');
+                } else {
+                    throw new Error(data.message || 'Erro desconhecido na busca');
+                }
+            } catch (error) {
+                console.error('❌ Erro na busca:', error);
+                updateSystemStatus('error');
+                mostrarErroNaBusca(error.message);
+            } finally {
+                btnBuscar.disabled = false;
+                btnBuscar.innerHTML = '<i class="fas fa-search mr-2"></i>Buscar Repositórios';
+                
+                if (repositorios.length > 0) {
+                    document.getElementById('loading').classList.add('hidden');
+                }
+            }
+        }
+
+        // Analysis functions - atualizada com verificação de autenticação
+        async function analisarRepositorio(repoUrl) {
+            if (!isAuthenticated) {
+                alert('Por favor, faça login primeiro');
+                mostrarTelaLogin();
+                return;
+            }
+            
+            if (!repoUrl || !repoUrl.includes('github.com')) {
+                alert('URL do repositório inválida');
+                return;
+            }
+
+            console.log(`🤖 Iniciando análise ${ag2Available ? 'AG2' : 'tradicional'} de: ${repoUrl}`);
+            updateSystemStatus('analyzing');
+
+            // Hide previous sections
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('analysisSection').classList.remove('hidden');
+            document.getElementById('analysisResults').classList.add('hidden');
+
+            // Reset progress
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('phaseText').textContent = ag2Available ? 'Iniciando análise AG2...' : 'Iniciando análise...';
+            document.getElementById('progressText').textContent = '0%';
+            document.getElementById('statusMessage').textContent = 'Preparando sistema...';
+            document.getElementById('currentStep').textContent = '';
+            document.getElementById('logs').innerHTML = '';
+
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        repo_url: repoUrl,
+                        max_files: 25,
+                        deep_analysis: true,
+                        include_config: true,
+                        anonymous: document.getElementById('modoAnonimo') ? document.getElementById('modoAnonimo').checked : true
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Start status polling
+                    analysisInterval = setInterval(checkAnalysisStatus, 2000);
+                    
+                    document.getElementById('phaseText').textContent = ag2Available ? 'Análise AG2 iniciada' : 'Análise iniciada';
+                    document.getElementById('progressBar').style.width = '5%';
+                    document.getElementById('progressText').textContent = '5%';
+                    document.getElementById('statusMessage').textContent = ag2Available ? 'Sistema AG2 ativo...' : 'Sistema de análise ativo...';
+                    
+                    document.getElementById('analysisSection').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    throw new Error(data.message || 'Erro desconhecido ao iniciar análise');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao iniciar análise:', error);
+                updateSystemStatus('error');
+                
+                document.getElementById('phaseText').textContent = 'Erro na análise';
+                document.getElementById('statusMessage').textContent = `Erro: ${error.message}`;
+                document.getElementById('logs').innerHTML = `<div class="text-red-600">❌ ${error.message}</div>`;
+            }
+        }
+
+        // [Resto das funções JavaScript permanecem iguais...]
+        // checkAnalysisStatus, loadAnalysisResults, mostrarRepositorios, etc.
+        
+        // Função de verificação de status da análise
+        async function checkAnalysisStatus() {
+            try {
+                const response = await fetch('/api/status');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const status = await response.json();
+
+                // Update UI
+                document.getElementById('phaseText').textContent = status.phase || 'Processando...';
+                document.getElementById('progressText').textContent = (status.progress || 0) + '%';
+                document.getElementById('progressBar').style.width = (status.progress || 0) + '%';
+                document.getElementById('statusMessage').textContent = status.message || 'Processando...';
+                
+                // Update current step
+                if (status.current_step) {
+                    const stepIcon = ag2Available ? '🤖' : '🔄';
+                    document.getElementById('currentStep').textContent = `${stepIcon} ${status.current_step}`;
+                }
+                
+                // Update logs with enhanced styling
+                if (status.logs && status.logs.length > 0) {
+                    const logsHTML = status.logs.map((log, index) => {
+                        const timestamp = new Date().toLocaleTimeString();
+                        const isError = log.includes('❌') || log.toLowerCase().includes('erro');
+                        const isSuccess = log.includes('✅') || log.toLowerCase().includes('sucesso');
+                        const isWarning = log.includes('⚠️') || log.toLowerCase().includes('warning');
+                        
+                        let logClass = 'text-green-300';
+                        if (isError) logClass = 'text-red-400';
+                        else if (isSuccess) logClass = 'text-green-400';
+                        else if (isWarning) logClass = 'text-yellow-400';
+                        
+                        return `<div class="mb-2 p-2 border-l-2 border-gray-600 ${logClass}">
+                                    <span class="text-gray-400 text-xs">[${timestamp}]</span> ${log}
+                                </div>`;
+                    }).join('');
+                    
+                    document.getElementById('logs').innerHTML = logsHTML;
+                    document.getElementById('logsContainer').scrollTop = document.getElementById('logsContainer').scrollHeight;
+                }
+
+                // Check final status
+                if (status.status === 'completed') {
+                    clearInterval(analysisInterval);
+                    analysisInterval = null;
+                    
+                    setTimeout(async () => {
+                        await loadAnalysisResults();
+                    }, 1000);
+                    
+                } else if (status.status === 'error') {
+                    clearInterval(analysisInterval);
+                    analysisInterval = null;
+                    updateSystemStatus('error');
+                    
+                    document.getElementById('phaseText').textContent = 'Erro na análise';
+                    document.getElementById('statusMessage').textContent = status.message || 'Erro desconhecido';
+                    document.getElementById('logs').innerHTML += `<div class="text-red-600 mt-2">❌ Análise falhou: ${status.message}</div>`;
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao verificar status:', error);
+                
+                if (!window.statusErrorCount) window.statusErrorCount = 0;
+                window.statusErrorCount++;
+                
+                if (window.statusErrorCount > 5) {
+                    clearInterval(analysisInterval);
+                    analysisInterval = null;
+                    updateSystemStatus('error');
+                    
+                    document.getElementById('statusMessage').textContent = 'Erro de comunicação com o servidor';
+                    document.getElementById('logs').innerHTML += `<div class="text-red-600 mt-2">❌ Erro de comunicação: ${error.message}</div>`;
+                }
+            }
+        }
+
+        async function loadAnalysisResults() {
+            try {
+                const response = await fetch('/api/results');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const results = await response.json();
+
+                if (!results || !results.analysis_data) {
+                    throw new Error('Resultados de análise inválidos');
+                }
+
+                const analysisType = results.analysis_type || 'traditional';
+                const isAG2 = analysisType === 'AG2_enhanced';
+                
+                document.getElementById('resultsContent').innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                        <div class="flex items-center">
+                            <i class="fas fa-${isAG2 ? 'robot' : 'check-circle'} text-green-600 text-2xl mr-3"></i>
+                            <div>
+                                <h4 class="font-bold text-green-800 text-lg">Análise ${isAG2 ? 'AG2' : 'Tradicional'} Concluída!</h4>
+                                <p class="text-green-700">Sistema ${isAG2 ? 'multi-agent' : 'tradicional'} processou o repositório - Documentação completa gerada</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resumo de Análise -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                            <h4 class="font-bold text-blue-800 mb-4 flex items-center">
+                                <i class="fas fa-chart-bar mr-2"></i>
+                                Análise ${isAG2 ? 'AG2' : 'Tradicional'}
+                            </h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Tipo de Sistema:</span>
+                                    <span class="font-medium text-blue-900">${isAG2 ? 'AG2 Multi-Agent' : 'Análise Tradicional'}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Status:</span>
+                                    <span class="font-medium text-blue-900">${results.status}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-blue-700">Documentos gerados:</span>
+                                    <span class="font-medium text-blue-900">${results.generated_docs ? results.generated_docs.length : 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-purple-50 rounded-lg p-6 border border-purple-200">
+                            <h4 class="font-bold text-purple-800 mb-4 flex items-center">
+                                <i class="fas fa-file-download mr-2"></i>
+                                Downloads Disponíveis
+                            </h4>
+                            ${results.generated_docs && results.generated_docs.length > 0 ? `
+                                <div class="mb-4">
+                                    <a href="/api/download-all-zip" 
+                                       class="flex items-center justify-center p-4 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg hover:from-green-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg mb-3">
+                                        <i class="fas fa-file-archive mr-3 text-lg"></i>
+                                        <span class="font-bold">Download Completo (.ZIP)</span>
+                                        <span class="ml-2 px-2 py-1 bg-white bg-opacity-20 rounded-full text-xs">Todos os arquivos</span>
+                                    </a>
+                                </div>
+                                <div class="text-sm text-purple-600 font-medium mb-2">Downloads individuais:</div>
+                                <div class="space-y-2 max-h-32 overflow-y-auto">
+                                    ${results.generated_docs.map(filename => `
+                                        <a href="/api/download/${filename}" 
+                                           class="flex items-center justify-between p-2 bg-white rounded border border-purple-200 hover:border-purple-400 hover:bg-purple-25 transition-colors group text-sm">
+                                            <div class="flex items-center">
+                                                <i class="fas fa-file-alt text-purple-600 mr-2"></i>
+                                                <span class="text-purple-800 font-medium">${filename}</span>
+                                            </div>
+                                            <i class="fas fa-download text-purple-400 group-hover:text-purple-600"></i>
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            ` : '<p class="text-purple-600">Nenhum documento gerado</p>'}
+                        </div>
+                    </div>
+
+                    <div class="mt-6 p-4 bg-${isAG2 ? 'purple' : 'blue'}-50 rounded-lg border border-${isAG2 ? 'purple' : 'blue'}-200">
+                        <div class="flex items-center text-${isAG2 ? 'purple' : 'blue'}-800">
+                            <i class="fas fa-${isAG2 ? 'robot' : 'shield-alt'} mr-2"></i>
+                            <span class="font-medium">${isAG2 ? 'Sistema AG2 Multi-Agent' : 'Análise Tradicional'}:</span>
+                        </div>
+                        <p class="text-${isAG2 ? 'purple' : 'blue'}-700 text-sm mt-1">
+                            ${isAG2 ? 
+                                'Este relatório foi processado usando 4 agentes especializados do sistema AG2, garantindo análise técnica avançada e relatórios anônimos de alta qualidade.' :
+                                'Este relatório foi processado usando análise tradicional, fornecendo documentação técnica abrangente e relatórios anônimos.'
+                            }
+                        </p>
+                    </div>
+                `;
+
+                document.getElementById('analysisResults').classList.remove('hidden');
+                updateSystemStatus('healthy');
+                document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                window.statusErrorCount = 0;
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar resultados:', error);
+                
+                document.getElementById('resultsContent').innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl mb-3"></i>
+                        <h4 class="font-bold text-red-800 mb-2">Erro ao Carregar Resultados</h4>
+                        <p class="text-red-700 mb-4">${error.message}</p>
+                        <button onclick="loadAnalysisResults()" 
+                                class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                            <i class="fas fa-redo mr-2"></i>
+                            Tentar Novamente
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('analysisResults').classList.remove('hidden');
+                updateSystemStatus('error');
+            }
+        }
+
+        // Helper functions
+        function mostrarRepositorios(repos) {
+            const container = document.getElementById('repositoriosList');
+            container.innerHTML = '';
+
+            if (repos.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-500">Nenhum repositório encontrado</div>';
+                document.getElementById('results').classList.remove('hidden');
+                return;
+            }
+
+            repos.slice(0, 15).forEach(repo => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 rounded-xl p-6 hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-blue-300';
+                
+                const languageColors = {
+                    'JavaScript': 'text-yellow-600 bg-yellow-100',
+                    'Python': 'text-green-600 bg-green-100',
+                    'TypeScript': 'text-blue-600 bg-blue-100',
+                    'Java': 'text-red-600 bg-red-100',
+                    'Go': 'text-cyan-600 bg-cyan-100',
+                    'Rust': 'text-orange-600 bg-orange-100',
+                    'C++': 'text-purple-600 bg-purple-100',
+                    'PHP': 'text-indigo-600 bg-indigo-100'
+                };
+                const langColor = languageColors[repo.linguagem_principal] || 'text-gray-600 bg-gray-100';
+                
+                const ag2Badge = ag2Available ? 
+                    '<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full ml-2"><i class="fas fa-robot mr-1"></i>AG2</span>' : 
+                    '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full ml-2">Tradicional</span>';
+                
+                card.innerHTML = `
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-800 text-lg mb-1 hover:text-blue-600 transition-colors cursor-pointer" 
+                               onclick="window.open('${repo.url}', '_blank')">${repo.nome}</h4>
+                            <p class="text-gray-600 text-sm mb-3 leading-relaxed">${repo.descricao.substring(0, 120)}${repo.descricao.length > 120 ? '...' : ''}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-4 text-sm">
+                            <span class="flex items-center px-2 py-1 rounded-full ${langColor}">
+                                <i class="fas fa-code mr-1"></i>
+                                ${repo.linguagem_principal}
+                            </span>
+                            <span class="flex items-center text-gray-500">
+                                <i class="fas fa-star text-yellow-500 mr-1"></i>
+                                ${repo.estrelas.toLocaleString()}
+                            </span>
+                            <span class="flex items-center text-gray-500">
+                                <i class="fas fa-code-branch text-green-500 mr-1"></i>
+                                ${repo.forks.toLocaleString()}
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            ${Math.round(repo.tamanho_kb / 1024)} MB
+                        </div>
+                    </div>
+                    
+                    ${repo.topicos.length > 0 ? `
+                        <div class="flex flex-wrap gap-1 mb-4">
+                            ${repo.topicos.slice(0, 4).map(topic => 
+                                `<span class="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-200">${topic}</span>`
+                            ).join('')}
+                            ${repo.topicos.length > 4 ? `<span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">+${repo.topicos.length - 4}</span>` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    <button type="button" 
+                            onclick="analisarRepositorio('${repo.url}')"
+                            class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-medium transform hover:scale-105 shadow-md hover:shadow-lg">
+                        <i class="fas fa-robot mr-2"></i>
+                        Análise ${ag2Available ? 'AG2' : 'Tradicional'}
+                        ${ag2Badge}
+                    </button>
+                `;
+                
+                container.appendChild(card);
+            });
+
+            document.getElementById('results').classList.remove('hidden');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function mostrarMensagemNenhumRepo(usuario) {
+            const loadingElement = document.getElementById('loading');
+            loadingElement.innerHTML = `
+                <div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 text-center">
+                    <i class="fas fa-search text-yellow-600 text-4xl mb-4"></i>
+                    <h3 class="text-xl font-bold text-yellow-800 mb-2">Nenhum repositório encontrado</h3>
+                    <p class="text-yellow-700 mb-4">
+                        Não foram encontrados repositórios públicos para "${usuario}"
+                    </p>
+                    <button onclick="location.reload()" 
+                            class="mt-4 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">
+                        <i class="fas fa-redo mr-2"></i>
+                        Nova Busca
+                    </button>
+                </div>
+            `;
+        }
+
+        function mostrarErroNaBusca(errorMessage) {
+            const loadingElement = document.getElementById('loading');
+            loadingElement.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-4xl mb-4"></i>
+                    <h3 class="text-xl font-bold text-red-800 mb-2">Erro na Busca</h3>
+                    <p class="text-red-700 mb-4">${errorMessage}</p>
+                    <button onclick="location.reload()" 
+                            class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        <i class="fas fa-redo mr-2"></i>
+                        Tentar Novamente
+                    </button>
+                </div>
+            `;
+        }
+
+        function popularFiltroLinguagens() {
+            const linguagens = [...new Set(repositorios.map(r => r.linguagem_principal))];
+            const filtroLinguagem = document.getElementById('filtroLinguagem');
+            
+            filtroLinguagem.innerHTML = '<option value="">Todas as linguagens</option>';
+            linguagens.forEach(lang => {
+                if (lang !== 'Desconhecida') {
+                    filtroLinguagem.innerHTML += `<option value="${lang}">${lang}</option>`;
+                }
+            });
+        }
+
+        // Event listeners for filters
+        document.addEventListener('DOMContentLoaded', function() {
+            const filtroLinguagem = document.getElementById('filtroLinguagem');
+            const ordenacao = document.getElementById('ordenacao');
+
+            if (filtroLinguagem) {
+                filtroLinguagem.addEventListener('change', function() {
+                    const linguagem = this.value;
+                    const filtrados = linguagem ? 
+                        repositorios.filter(r => r.linguagem_principal === linguagem) : 
+                        repositorios;
+                    mostrarRepositorios(filtrados);
+                });
+            }
+
+            if (ordenacao) {
+                ordenacao.addEventListener('change', function() {
+                    const ordenacaoTipo = this.value;
+                    const ordenados = [...repositorios];
+                    
+                    switch(ordenacaoTipo) {
+                        case 'stars':
+                            ordenados.sort((a, b) => b.estrelas - a.estrelas);
+                            break;
+                        case 'name':
+                            ordenados.sort((a, b) => a.nome.localeCompare(b.nome));
+                            break;
+                        case 'updated':
+                            ordenados.sort((a, b) => new Date(b.atualizado_em) - new Date(a.atualizado_em));
+                            break;
+                    }
+                    
+                    mostrarRepositorios(ordenados);
+                });
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (analysisInterval) {
+                clearInterval(analysisInterval);
+            }
+        });
+
+        // Auto-logout em caso de inatividade (opcional)
+        let inactivityTimer;
+        const INACTIVITY_TIME = 30 * 60 * 1000; // 30 minutos
+
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            if (isAuthenticated) {
+                inactivityTimer = setTimeout(() => {
+                    alert('Sessão expirada por inatividade. Faça login novamente.');
+                    realizarLogout();
+                }, INACTIVITY_TIME);
+            }
+        }
+
+        // Monitorar atividade do usuário
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
+            document.addEventListener(event, resetInactivityTimer, true);
+        });
+    </script>
+</body>
+</html>
