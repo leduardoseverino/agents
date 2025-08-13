@@ -96,6 +96,16 @@
                         <i class="fas fa-robot mr-1"></i>
                         AG2 Status
                     </span>
+                    <span id="modelStatus" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                        <i class="fas fa-microchip mr-1"></i>
+                        Modelo: -
+                    </span>
+                    <select id="modelSelector" class="px-2 py-1 border border-gray-300 rounded-lg text-sm">
+                        <option value="">auto</option>
+                    </select>
+                    <button type="button" onclick="aplicarModelo()" class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                        Aplicar
+                    </button>
                     <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
                         <i class="fas fa-shield-alt mr-1"></i>
                         Relatórios Anônimos
@@ -407,6 +417,8 @@
             console.log('🤖 DocAgent Skyone v2.0 com AG2 e Autenticação carregado!');
             // Verificar estado de login assim que a página carregar
             verificarStatusAuth();
+            // Carregar modelos disponíveis
+            carregarModelos();
             
             // Enter key listener
             document.getElementById('usuario').addEventListener('keypress', function(e) {
@@ -431,6 +443,66 @@
                 }
             });
         });
+
+        // Model selection
+        async function carregarModelos() {
+            try {
+                const response = await fetch('/api/models');
+                const data = await response.json();
+                const selector = document.getElementById('modelSelector');
+                const status = document.getElementById('modelStatus');
+                if (!selector) return;
+                selector.innerHTML = '';
+                const list = (data && data.success && Array.isArray(data.available) && data.available.length > 0)
+                    ? data.available
+                    : ['devstral:latest', 'llama3.2:3b', 'qwen3:8b'];
+                list.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    selector.appendChild(opt);
+                });
+                if (data && data.current) {
+                    selector.value = data.current;
+                }
+                if (status) {
+                    const current = selector.value || (data && data.current) || '-';
+                    status.innerHTML = `<i class="fas fa-microchip mr-1"></i>Modelo: ${current}`;
+                }
+            } catch (error) {
+                console.error('Erro ao carregar modelos:', error);
+            }
+        }
+
+        async function aplicarModelo() {
+            try {
+                const selector = document.getElementById('modelSelector');
+                const model = selector ? selector.value : '';
+                if (!model) {
+                    alert('Selecione um modelo');
+                    return;
+                }
+                const response = await fetch('/api/models/select', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ model })
+                });
+                const data = await response.json();
+                if (data && data.success) {
+                    const status = document.getElementById('modelStatus');
+                    if (status) status.innerHTML = `<i class=\"fas fa-microchip mr-1\"></i>Modelo: ${data.selected}`;
+                } else {
+                    alert(data.error || 'Falha ao aplicar modelo');
+                }
+            } catch (error) {
+                console.error('Erro ao aplicar modelo:', error);
+            }
+        }
+
+        function getSelectedModel() {
+            const selector = document.getElementById('modelSelector');
+            return selector ? selector.value : '';
+        }
 
         // Sistema de Autenticação
         async function verificarStatusAuth() {
@@ -882,10 +954,11 @@
                     },
                     body: JSON.stringify({
                         repo_url: repoUrl,
-                        max_files: 25,
+                        max_files: 50,
                         deep_analysis: true,
                         include_config: true,
-                        anonymous: document.getElementById('modoAnonimo') ? document.getElementById('modoAnonimo').checked : true
+                        anonymous: document.getElementById('modoAnonimo') ? document.getElementById('modoAnonimo').checked : true,
+                        model: getSelectedModel()
                     })
                 });
 
