@@ -15,7 +15,7 @@ Características:
 - Sistema de tools avançadas para análise de código
 - Arquitetura C4 Model para documentação arquitetural
 
-Autor: DocAgent Skyone v3.0 LangGraph
+- DocAgent Skyone v3.0 LangGraph 
 """
 
 import os
@@ -190,6 +190,7 @@ class AnalysisRequest(BaseModel):
     max_files: int = 50
     deep_analysis: bool = True
     anonymous: bool = True
+    local_directory: Optional[str] = None  # Para análise de diretório local
 
 class AnalysisStatus(BaseModel):
     """Status da análise"""
@@ -475,16 +476,20 @@ class RepositoryAnalysisTools:
             logger.error(f"Erro na análise de estrutura: {e}")
             return {"error": str(e)}
     
-    def analyze_code_files(self, max_files: int = 20) -> List[FileAnalysis]:
+    def analyze_code_files(self, max_files: int = 50) -> List[FileAnalysis]:
         """Analisa arquivos de código em detalhes"""
         try:
             analyses = []
             
-            # Padrões de arquivos importantes
+            # Padrões de arquivos importantes (expandido)
             important_patterns = [
                 'main.py', 'app.py', 'index.js', 'server.py', 'api.py',
                 'models.py', 'views.py', 'controllers.py', 'routes.py',
-                'utils.py', 'helpers.js', 'config.py', 'settings.py'
+                'utils.py', 'helpers.js', 'config.py', 'settings.py',
+                'service.py', 'handler.py', 'manager.py', 'client.py',
+                'database.py', 'db.py', 'auth.py', 'middleware.py',
+                'component.js', 'module.py', 'processor.py', 'worker.py',
+                'scheduler.py', 'task.py', 'job.py', 'queue.py'
             ]
             
             for root, dirs, files in os.walk(self.repo_path):
@@ -587,24 +592,44 @@ class RepositoryAnalysisTools:
         return language_map.get(ext, 'Unknown')
     
     def _extract_functions(self, content: str, language: str) -> List[str]:
-        """Extrai funções do código"""
+        """Extrai funções do código com mais detalhes"""
         functions = []
         try:
             if language == 'Python':
-                pattern = r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\('
+                # Capturar funções normais e async
+                pattern = r'(?:async\s+)?def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\('
+                # Também capturar métodos de classe
+                class_method_pattern = r'^\s+(?:async\s+)?def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\('
+                
+                matches = re.findall(pattern, content, re.MULTILINE)
+                class_matches = re.findall(class_method_pattern, content, re.MULTILINE)
+                functions.extend(matches)
+                functions.extend([f"method_{m}" for m in class_matches])
+                
             elif language in ['JavaScript', 'TypeScript']:
-                pattern = r'function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\('
+                # Funções normais, arrow functions, métodos
+                patterns = [
+                    r'function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(',
+                    r'const\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*\(',
+                    r'([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*function\s*\(',
+                    r'([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)\s*=>'
+                ]
+                for pattern in patterns:
+                    matches = re.findall(pattern, content, re.MULTILINE)
+                    functions.extend(matches)
+                    
             elif language == 'Java':
                 pattern = r'(?:public|private|protected)?\s*(?:static)?\s*\w+\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\('
+                matches = re.findall(pattern, content, re.MULTILINE)
+                functions.extend(matches)
             else:
                 return []
             
-            matches = re.findall(pattern, content, re.MULTILINE)
-            functions = list(set(matches)) if matches else []
+            functions = list(set(functions)) if functions else []
         except Exception:
             pass
         
-        return functions
+        return functions[:20]  # Limitar a 20 funções mais importantes
     
     def _extract_classes(self, content: str, language: str) -> List[str]:
         """Extrai classes do código"""
@@ -901,14 +926,29 @@ class LLMManager:
                 models = []
                 for line in result.stdout.strip().split('\n')[1:]:
                     if line.strip():
-                        model_name = line.split()[0]
-                        models.append(model_name)
+                        parts = line.split()
+                        if parts:
+                            model_name = parts[0]
+                            # Adicionar informações extras se disponíveis
+                            size_info = parts[1] if len(parts) > 1 else ""
+                            models.append({
+                                "name": model_name,
+                                "size": size_info,
+                                "display_name": f"{model_name} ({size_info})" if size_info else model_name
+                            })
                 self.available_models["ollama"] = models
-                logger.info(f"Modelos Ollama encontrados: {models}")
+                logger.info(f"Modelos Ollama encontrados: {[m['name'] for m in models]}")
             else:
                 logger.warning("Ollama não está rodando")
+                self.available_models["ollama"] = []
         except Exception as e:
             logger.warning(f"Erro ao verificar Ollama: {e}")
+            self.available_models["ollama"] = []
+    
+    def get_ollama_models_detailed(self):
+        """Retorna modelos Ollama com detalhes"""
+        self._check_ollama_models()
+        return self.available_models["ollama"]
     
     def configure_model(self, config: ModelConfig):
         """Configura modelo LLM"""
@@ -976,18 +1016,40 @@ class DocumentationAgents:
         logger.info("Agentes de documentação inicializados")
     
     async def clone_repository_node(self, state: DocumentationState) -> DocumentationState:
-        """Nó para clonar repositório"""
+        """Nó para clonar repositório ou usar diretório local"""
         try:
             repo_url = state["repo_url"]
-            logger.info(f"Clonando repositório: {repo_url}")
+            logger.info(f"Processando: {repo_url}")
             
-            # Validar URL
+            # Verificar se é um diretório local
+            if repo_url.startswith("file://"):
+                local_path = repo_url.replace("file://", "")
+                logger.info(f"Usando diretório local: {local_path}")
+                
+                if not Path(local_path).exists():
+                    state["logs"].append(f"❌ Diretório não encontrado: {local_path}")
+                    state["error_count"] += 1
+                    return state
+                
+                if not Path(local_path).is_dir():
+                    state["logs"].append(f"❌ Caminho não é um diretório: {local_path}")
+                    state["error_count"] += 1
+                    return state
+                
+                state["repo_path"] = local_path
+                state["current_phase"] = "local_ready"
+                state["progress"] = 20
+                state["logs"].append("✅ Diretório local configurado")
+                logger.info(f"Diretório local pronto: {local_path}")
+                return state
+            
+            # Validar URL GitHub
             if not self._validate_github_url(repo_url):
                 state["logs"].append("❌ URL inválida")
                 state["error_count"] += 1
                 return state
             
-            # Preparar diretório
+            # Preparar diretório para clone
             repo_name = repo_url.split("/")[-1].replace(".git", "")
             workdir = Path("workdir").resolve()
             workdir.mkdir(exist_ok=True)
@@ -1014,8 +1076,8 @@ class DocumentationAgents:
             return state
             
         except Exception as e:
-            logger.error(f"Erro no clone: {e}")
-            state["logs"].append(f"❌ Erro no clone: {str(e)}")
+            logger.error(f"Erro no processamento: {e}")
+            state["logs"].append(f"❌ Erro no processamento: {str(e)}")
             state["error_count"] += 1
             return state
     
@@ -1070,10 +1132,10 @@ class DocumentationAgents:
             # Preparar contexto da análise
             structure_info = state.get("file_structure", {})
             
-            # Prompt para planejamento
+            # Prompt para planejamento com C4
             planning_prompt = ChatPromptTemplate.from_template("""
-Você é um especialista em documentação técnica. Baseado na análise do repositório abaixo, 
-crie um plano detalhado para documentação completa em formato JSON.
+Você é um especialista em documentação técnica e arquitetura C4. Baseado na análise do repositório abaixo, 
+crie um plano detalhado para documentação completa com arquitetura C4 em formato JSON.
 
 ANÁLISE DO REPOSITÓRIO:
 {structure_analysis}
@@ -1082,29 +1144,35 @@ ANÁLISE DO REPOSITÓRIO:
 
 {dependencies}
 
-Crie um plano JSON com exatamente 3 seções:
-1. "Visão Geral do Projeto" - tecnologias, propósito, arquitetura
-2. "Guia de Instalação" - pré-requisitos, instalação, configuração
-3. "Relatório Técnico" - análise detalhada dos arquivos e código
+Crie um plano JSON com exatamente 4 seções seguindo o modelo C4:
+1. "C4 Context Diagram" - visão geral do sistema e interações externas
+2. "C4 Container Diagram" - contêineres e tecnologias principais
+3. "C4 Component Diagram" - componentes internos e suas responsabilidades
+4. "C4 Code Analysis" - análise detalhada do código e estrutura
 
 Formato JSON obrigatório:
 {{
-  "overview": "Descrição geral do projeto baseada na análise",
+  "overview": "Documentação arquitetural C4 do projeto Skyone",
   "sections": [
     {{
-      "title": "Visão Geral do Projeto",
-      "description": "Análise completa das tecnologias e arquitetura",
-      "content_type": "overview"
+      "title": "C4 Context Diagram",
+      "description": "Visão contextual do sistema e suas interações externas",
+      "content_type": "c4_context"
     }},
     {{
-      "title": "Guia de Instalação e Configuração", 
-      "description": "Instruções detalhadas baseadas nas dependências encontradas",
-      "content_type": "installation"
+      "title": "C4 Container Diagram", 
+      "description": "Contêineres, tecnologias e comunicação entre componentes",
+      "content_type": "c4_container"
     }},
     {{
-      "title": "Relatório Técnico dos Arquivos",
-      "description": "Análise técnica detalhada de cada arquivo importante",
-      "content_type": "technical"
+      "title": "C4 Component Diagram",
+      "description": "Componentes internos, interfaces e responsabilidades",
+      "content_type": "c4_component"
+    }},
+    {{
+      "title": "C4 Code Analysis",
+      "description": "Análise detalhada do código, classes e implementação",
+      "content_type": "c4_code"
     }}
   ]
 }}
@@ -1139,13 +1207,15 @@ Responda APENAS com o JSON válido.
                     
             except Exception as e:
                 logger.warning(f"Erro ao extrair plano JSON: {e}")
-                # Plano padrão
+                # Plano padrão C4 com fluxogramas
                 state["documentation_plan"] = {
-                    "overview": "Projeto analisado automaticamente",
+                    "overview": "Documentação arquitetural C4 do projeto Skyone",
                     "sections": [
-                        {"title": "Visão Geral do Projeto", "description": "Análise geral", "content_type": "overview"},
-                        {"title": "Guia de Instalação", "description": "Instruções de instalação", "content_type": "installation"},
-                        {"title": "Relatório Técnico", "description": "Análise técnica", "content_type": "technical"}
+                        {"title": "C4 Context Diagram", "description": "Visão contextual do sistema", "content_type": "c4_context"},
+                        {"title": "C4 Container Diagram", "description": "Contêineres e tecnologias", "content_type": "c4_container"},
+                        {"title": "C4 Component Diagram", "description": "Componentes internos", "content_type": "c4_component"},
+                        {"title": "C4 Code Analysis", "description": "Análise detalhada do código", "content_type": "c4_code"},
+                        {"title": "Mermaid Flowcharts", "description": "Fluxogramas detalhados dos componentes", "content_type": "mermaid_flowcharts"}
                     ]
                 }
                 state["logs"].append("⚠️ Usando plano padrão")
@@ -1231,7 +1301,17 @@ Responda APENAS com o JSON válido.
             # Anonimizar URL se necessário
             final_url = self.anonymizer.anonymize_repo_url(repo_url) if anonymous else repo_url
             
-            if content_type == "overview":
+            if content_type == "c4_context":
+                prompt = self._create_c4_context_prompt(section, state, final_url)
+            elif content_type == "c4_container":
+                prompt = self._create_c4_container_prompt(section, state, final_url)
+            elif content_type == "c4_component":
+                prompt = self._create_c4_component_prompt(section, state, final_url)
+            elif content_type == "c4_code":
+                prompt = self._create_c4_code_prompt(section, state, final_url)
+            elif content_type == "mermaid_flowcharts":
+                prompt = self._create_mermaid_flowcharts_prompt(section, state, final_url)
+            elif content_type == "overview":
                 prompt = self._create_overview_prompt(section, state, final_url)
             elif content_type == "installation":
                 prompt = self._create_installation_prompt(section, state, final_url)
@@ -1358,6 +1438,397 @@ Crie documentação técnica em Markdown com:
 Use APENAS dados da análise real dos arquivos.
 """
     
+    def _create_c4_context_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
+        """Cria prompt para C4 Context Diagram"""
+        structure_info = state.get("file_structure", {})
+        
+        return f"""
+Crie uma documentação C4 CONTEXT DIAGRAM baseada na análise real:
+
+TÍTULO: {section['title']}
+PROJETO: {final_url}
+
+ANÁLISE ESTRUTURAL:
+{structure_info.get('structure_analysis', 'Análise não disponível')}
+
+DEPENDÊNCIAS:
+{structure_info.get('dependencies', 'Dependências não identificadas')}
+
+Crie documentação em Markdown seguindo o modelo C4 Context:
+
+# {section['title']}
+
+## 🎯 Visão Contextual do Sistema
+
+### Sistema Principal
+[Nome e propósito do sistema baseado na análise]
+
+### Usuários e Atores
+[Identifique os tipos de usuários que interagem com o sistema]
+
+### Sistemas Externos
+[Sistemas, APIs e serviços externos identificados nas dependências]
+
+### Interações Principais
+[Como o sistema se comunica com o mundo externo]
+
+## 📊 Diagrama de Contexto C4
+
+```mermaid
+C4Context
+    title Diagrama de Contexto - [Nome do Sistema]
+    
+    Person(user, "Usuário", "Descrição do usuário principal")
+    System(system, "[Nome do Sistema]", "Descrição do sistema")
+    System_Ext(external, "Sistema Externo", "Descrição")
+    
+    Rel(user, system, "Usa")
+    Rel(system, external, "Consome API")
+```
+
+## 🔗 Integrações Identificadas
+[Liste as integrações encontradas na análise]
+
+Use APENAS informações da análise real fornecida.
+"""
+
+    def _create_c4_container_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
+        """Cria prompt para C4 Container Diagram"""
+        structure_info = state.get("file_structure", {})
+        
+        return f"""
+Você é um especialista em arquitetura C4. Crie uma documentação C4 CONTAINER DIAGRAM baseada EXCLUSIVAMENTE na análise real:
+
+TÍTULO: {section['title']}
+
+ANÁLISE DE CÓDIGO:
+{structure_info.get('code_analysis', 'Análise de código não disponível')}
+
+DEPENDÊNCIAS E TECNOLOGIAS REAIS:
+{structure_info.get('dependencies', 'Dependências não identificadas')}
+
+ESTRUTURA REAL:
+{structure_info.get('structure_analysis', 'Estrutura não analisada')}
+
+INSTRUÇÕES CRÍTICAS:
+1. Identifique APENAS tecnologias REAIS encontradas nas dependências
+2. Use APENAS linguagens de programação REAIS detectadas na análise
+3. Identifique contêineres REAIS baseados na estrutura de diretórios
+4. NÃO invente bancos de dados ou APIs se não foram identificados
+5. Base-se APENAS nos arquivos e tecnologias encontrados
+
+# {section['title']}
+
+## 🏗️ Arquitetura de Contêineres Reais
+
+### Contêineres Identificados na Análise
+[Baseado na estrutura de diretórios REAL: frontend/, backend/, api/, etc.]
+
+### Stack Tecnológico Real
+[APENAS as tecnologias REAIS das dependências:]
+- **Linguagens:** [Linguagens REAIS detectadas]
+- **Frameworks:** [Frameworks REAIS dos arquivos de dependência]
+- **Bibliotecas:** [Bibliotecas REAIS identificadas]
+
+### Comunicação e Protocolos
+[Baseado nos imports e configurações REAIS encontrados]
+
+## 📦 Diagrama de Contêineres C4 (Dados Reais)
+
+```mermaid
+C4Container
+    title Diagrama de Contêineres - [Nome Real do Projeto]
+    
+    Person(user, "Usuário", "Usuário do sistema")
+    
+    Container_Boundary(system, "[Nome Real do Sistema]") {{
+        [Para cada contêiner REAL identificado na estrutura:]
+        [Exemplo: Container(app_real, "NomeAplicacaoReal", "TecnologiaReal", "Função real")]
+        [APENAS se houver banco de dados identificado: ContainerDb(db_real, "BancoDadosReal", "TipoReal", "Função real")]
+    }}
+    
+    [APENAS se houver APIs externas REAIS nas dependências:]
+    [System_Ext(api_real, "NomeAPIReal", "Função real")]
+    
+    [Relacionamentos REAIS baseados na análise:]
+    [Rel(user, app_real, "Interage", "ProtocoloReal")]
+    [Rel(app_real, db_real, "Acessa", "ProtocoloReal") - APENAS se DB foi identificado]
+```
+
+## 🔧 Detalhes Técnicos dos Contêineres Reais
+[Para cada contêiner REAL identificado:]
+
+### [Nome Real do Contêiner]
+- **Tecnologia:** [Tecnologia REAL detectada]
+- **Localização:** [Diretório REAL na estrutura]
+- **Responsabilidades:** [Baseadas nos arquivos REAIS encontrados]
+- **Dependências:** [Dependências REAIS identificadas]
+- **Configuração:** [Arquivos de config REAIS encontrados]
+
+## 🌐 Integrações Externas Reais
+[APENAS se identificadas nas dependências ou imports:]
+
+IMPORTANTE: Use SOMENTE dados REAIS da análise. NÃO invente contêineres, bancos de dados ou APIs.
+"""
+
+    def _create_c4_component_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
+        """Cria prompt para C4 Component Diagram"""
+        structure_info = state.get("file_structure", {})
+        
+        return f"""
+Você é um especialista em arquitetura de software e documentação C4. Crie uma documentação C4 COMPONENT DIAGRAM baseada EXCLUSIVAMENTE na análise detalhada real fornecida.
+
+TÍTULO: {section['title']}
+
+ANÁLISE DETALHADA DE ARQUIVOS:
+{structure_info.get('code_analysis', 'Análise de código não disponível')}
+
+ESTRUTURA DO PROJETO:
+{structure_info.get('structure_analysis', 'Estrutura não analisada')}
+
+DEPENDÊNCIAS IDENTIFICADAS:
+{structure_info.get('dependencies', 'Dependências não identificadas')}
+
+INSTRUÇÕES CRÍTICAS:
+1. Use APENAS os arquivos, classes, funções e componentes REAIS identificados na análise
+2. NÃO invente ou use componentes genéricos como "Controller", "Service", "Repository"
+3. Use os NOMES REAIS dos arquivos e classes encontrados na análise
+4. Base as responsabilidades nas FUNÇÕES REAIS identificadas
+5. Use as TECNOLOGIAS REAIS encontradas nas dependências
+
+Crie documentação em Markdown seguindo o modelo C4 Component:
+
+# {section['title']}
+
+## 🧩 Componentes Reais Identificados
+
+### Arquivos e Módulos Principais
+[Liste APENAS os arquivos reais da análise com suas funções específicas]
+
+### Classes e Interfaces Reais
+[Liste APENAS as classes reais encontradas na análise de código]
+
+### Funções e Métodos Principais
+[Liste APENAS as funções reais identificadas na análise]
+
+## 🔗 Diagrama de Componentes C4 (Baseado na Análise Real)
+
+```mermaid
+C4Component
+    title Diagrama de Componentes - [Nome Real do Sistema]
+    
+    Container_Boundary(main_container, "[Nome Real da Aplicação]") {{
+        [Para cada arquivo/classe REAL da análise, crie um Component com nome, tecnologia e propósito REAIS]
+        [Exemplo: Component(arquivo_real, "NomeArquivoReal.py", "Python", "Função real identificada")]
+    }}
+    
+    [Adicione sistemas externos REAIS encontrados nas dependências]
+    [Adicione bancos de dados REAIS se identificados]
+    
+    [Crie relacionamentos REAIS baseados nos imports e dependências da análise]
+```
+
+## 📋 Detalhes dos Componentes Reais
+[Para cada arquivo/classe REAL da análise:]
+
+### [Nome Real do Arquivo/Classe]
+- **Localização:** [Caminho real do arquivo]
+- **Linguagem:** [Linguagem real detectada]
+- **Propósito:** [Propósito real identificado na análise]
+- **Funções Principais:** [Funções reais listadas]
+- **Dependências:** [Imports reais identificados]
+- **Complexidade:** [Complexidade real calculada]
+
+## 🔄 Fluxo de Dados Real
+[Baseado nos imports e dependências REAIS, descreva como os dados fluem entre os componentes REAIS]
+
+## 🏗️ Padrões Arquiteturais Identificados
+[Identifique padrões REAIS baseados na estrutura e organização dos arquivos analisados]
+
+IMPORTANTE: Use SOMENTE informações REAIS da análise fornecida. NÃO invente componentes genéricos.
+"""
+
+    def _create_c4_code_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
+        """Cria prompt para C4 Code Analysis"""
+        structure_info = state.get("file_structure", {})
+        
+        return f"""
+Crie uma documentação C4 CODE ANALYSIS baseada na análise detalhada do código:
+
+TÍTULO: {section['title']}
+
+ANÁLISE COMPLETA DOS ARQUIVOS:
+{structure_info.get('code_analysis', 'Análise de código não disponível')}
+
+ESTRUTURA DETALHADA:
+{structure_info.get('structure_analysis', 'Estrutura não analisada')}
+
+Crie documentação em Markdown seguindo o modelo C4 Code:
+
+# {section['title']}
+
+## 💻 Análise Detalhada do Código
+
+### Estrutura de Classes e Funções
+[Baseado na análise real dos arquivos]
+
+### Padrões de Código Identificados
+[Padrões arquiteturais encontrados na análise]
+
+### Dependências Internas
+[Como as classes e módulos se relacionam]
+
+## 🏗️ Estrutura de Código
+
+### Arquivos Principais Analisados
+[Para cada arquivo analisado:]
+
+#### [Nome do Arquivo]
+- **Linguagem:** [Detectada na análise]
+- **Propósito:** [Identificado na análise]
+- **Classes:** [Listadas na análise]
+- **Funções:** [Listadas na análise]
+- **Complexidade:** [Calculada na análise]
+- **Imports:** [Dependências identificadas]
+
+## 🔍 Métricas de Código
+[Estatísticas extraídas da análise]
+
+## 🏛️ Arquitetura do Código
+[Padrões arquiteturais identificados]
+
+## 📈 Qualidade e Complexidade
+[Avaliação baseada na análise realizada]
+
+## 🔗 Diagrama de Classes (se aplicável)
+
+```mermaid
+classDiagram
+    [Baseado nas classes identificadas na análise]
+```
+
+Use APENAS dados reais da análise dos arquivos fornecida.
+"""
+
+    def _create_mermaid_flowcharts_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
+        """Cria prompt para fluxogramas Mermaid detalhados"""
+        structure_info = state.get("file_structure", {})
+        
+        return f"""
+Você é um especialista em fluxogramas e diagramas Mermaid. Crie fluxogramas detalhados baseados EXCLUSIVAMENTE na análise real do código.
+
+TÍTULO: {section['title']}
+
+ANÁLISE COMPLETA DOS ARQUIVOS:
+{structure_info.get('code_analysis', 'Análise de código não disponível')}
+
+ESTRUTURA DETALHADA:
+{structure_info.get('structure_analysis', 'Estrutura não analisada')}
+
+DEPENDÊNCIAS IDENTIFICADAS:
+{structure_info.get('dependencies', 'Dependências não identificadas')}
+
+INSTRUÇÕES CRÍTICAS:
+1. Use APENAS arquivos, funções e fluxos REAIS identificados na análise
+2. Crie fluxogramas para os processos REAIS encontrados no código
+3. Use nomes REAIS das funções e classes
+4. Base os fluxos nas chamadas de função REAIS identificadas
+5. NÃO invente processos genéricos
+
+# {section['title']}
+
+## 🔄 Fluxogramas dos Componentes Reais
+
+### Fluxograma Principal do Sistema
+[Baseado no arquivo principal identificado na análise]
+
+```mermaid
+flowchart TD
+    [Para cada função/processo REAL identificado, crie um nó]
+    [Exemplo: A[FuncaoRealPrincipal] --> B[FuncaoRealSecundaria]]
+    [Use nomes REAIS das funções da análise]
+    
+    [Conecte baseado nas chamadas de função REAIS identificadas]
+    [Adicione decisões baseadas em condicionais REAIS do código]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+```
+
+### Fluxograma de Processamento de Dados
+[APENAS se identificado processamento de dados na análise]
+
+```mermaid
+flowchart LR
+    [Baseado nos fluxos REAIS de dados identificados]
+    [Use funções REAIS que manipulam dados]
+    
+    subgraph "Módulo Real"
+        [FuncaoRealEntrada] --> [FuncaoRealProcessamento]
+        [FuncaoRealProcessamento] --> [FuncaoRealSaida]
+    end
+```
+
+### Fluxograma de Interação entre Módulos
+[Baseado nos imports REAIS identificados]
+
+```mermaid
+flowchart TB
+    [Para cada arquivo/módulo REAL:]
+    
+    subgraph "[NomeModuloReal1]"
+        [FuncaoReal1]
+        [FuncaoReal2]
+    end
+    
+    subgraph "[NomeModuloReal2]"
+        [FuncaoReal3]
+        [FuncaoReal4]
+    end
+    
+    [Conecte baseado nos imports REAIS]
+    [FuncaoReal1] --> [FuncaoReal3]
+    [FuncaoReal2] --> [FuncaoReal4]
+```
+
+### Fluxograma de Tratamento de Erros
+[APENAS se identificado tratamento de erro na análise]
+
+```mermaid
+flowchart TD
+    [Baseado em try/catch ou tratamento de erro REAL encontrado]
+```
+
+### Fluxograma de Configuração e Inicialização
+[APENAS se identificados arquivos de config na análise]
+
+```mermaid
+flowchart TD
+    [Baseado nos arquivos de configuração REAIS encontrados]
+    [Use funções REAIS de inicialização identificadas]
+```
+
+## 📋 Descrição dos Fluxogramas
+
+### [Nome do Fluxograma Real]
+- **Baseado em:** [Arquivo/função REAL da análise]
+- **Entrada:** [Parâmetros REAIS identificados]
+- **Processamento:** [Lógica REAL encontrada no código]
+- **Saída:** [Retorno REAL da função]
+- **Dependências:** [Chamadas REAIS para outras funções]
+
+## 🔧 Detalhes de Implementação
+[Para cada fluxo REAL identificado:]
+
+### Processo: [Nome Real do Processo]
+- **Arquivo:** [Localização REAL]
+- **Função Principal:** [Nome REAL da função]
+- **Complexidade:** [Complexidade REAL calculada]
+- **Chamadas:** [Funções REAIS que chama]
+
+IMPORTANTE: Crie APENAS fluxogramas baseados em código REAL analisado. NÃO invente processos genéricos.
+"""
+
     def _create_general_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
         """Cria prompt genérico"""
         return f"""
@@ -1371,37 +1842,53 @@ Crie documentação útil e informativa em formato Markdown.
 """
     
     def _create_fallback_content(self, section: Dict, state: DocumentationState) -> str:
-        """Cria conteúdo de fallback"""
+        """Cria conteúdo de fallback C4"""
         title = section.get('title', 'Documentação')
         repo_url = state.get("repo_url", "")
         
         return f"""# {title}
 
-## 📋 Visão Geral
+## 🏗️ Documentação Arquitetural C4
 
-Esta seção documenta {title.lower()} do projeto.
+Esta seção documenta {title.lower()} seguindo o modelo de arquitetura C4.
 
-## 🚀 Informações
+## 🚀 Informações do Projeto
 
-- **Repositório:** {repo_url}
+- **Projeto:** {repo_url}
 - **Gerado em:** {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
-- **Sistema:** DocAgent LangGraph v3.0
+- **Sistema:** Skyone DocAgent v3.0
+- **Modelo:** Arquitetura C4
 
-## 📝 Observações
+## 📝 Sobre o Modelo C4
 
-Esta documentação foi gerada automaticamente pelo DocAgent LangGraph.
-Para informações mais detalhadas, consulte o código-fonte do projeto.
+O modelo C4 (Context, Container, Component, Code) fornece uma abordagem estruturada 
+para visualizar a arquitetura de software em quatro níveis hierárquicos.
+
+## 🔍 Análise Necessária
+
+Para uma documentação completa desta seção, é necessária uma análise mais 
+detalhada do código-fonte do projeto.
 
 ---
-*Gerado pelo DocAgent LangGraph v3.0*
+*Gerado pelo Skyone DocAgent v3.0 • Arquitetura C4*
 """
     
     def _get_section_filename(self, title: str, index: int, anonymous: bool) -> str:
-        """Gera nome do arquivo para seção"""
+        """Gera nome do arquivo para seção C4"""
         suffix = "_anonimo" if anonymous else ""
         
         title_lower = title.lower()
-        if "visão" in title_lower or "geral" in title_lower:
+        if "context" in title_lower:
+            return f"01_C4_Context_Diagram{suffix}.md"
+        elif "container" in title_lower:
+            return f"02_C4_Container_Diagram{suffix}.md"
+        elif "component" in title_lower:
+            return f"03_C4_Component_Diagram{suffix}.md"
+        elif "code" in title_lower:
+            return f"04_C4_Code_Analysis{suffix}.md"
+        elif "mermaid" in title_lower or "flowchart" in title_lower:
+            return f"05_Mermaid_Flowcharts{suffix}.md"
+        elif "visão" in title_lower or "geral" in title_lower:
             return f"01_visao_geral{suffix}.md"
         elif "instalação" in title_lower or "guia" in title_lower:
             return f"02_guia_instalacao{suffix}.md"
@@ -1831,6 +2318,9 @@ async def get_available_models():
         doc_agent = app_state["doc_agent"]
         available = doc_agent.llm_manager.list_available_models()
         
+        # Obter modelos Ollama detalhados
+        ollama_models_detailed = doc_agent.llm_manager.get_ollama_models_detailed()
+        
         # Verificar se OpenAI está configurada
         openai_configured = bool(os.environ.get("OPENAI_API_KEY"))
         
@@ -1845,13 +2335,14 @@ async def get_available_models():
         return {
             "success": True,
             "models": available,
+            "ollama_detailed": ollama_models_detailed,
             "status": {
                 "openai_configured": openai_configured,
                 "ollama_status": ollama_status
             },
             "recommended": {
                 "openai": "gpt-4o",
-                "ollama": "qwen2.5:7b"
+                "ollama": ollama_models_detailed[0]["name"] if ollama_models_detailed else "qwen2.5:7b"
             }
         }
     except Exception as e:
