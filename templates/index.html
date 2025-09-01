@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DocAgent LangGraph - Documentação Automática com IA</title>
+    <title>Skyone DocAgent - Documentação Automática com IA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#1e40af',
-                        secondary: '#3b82f6',
-                        accent: '#0ea5e9',
-                        langgraph: '#8b5cf6'
+                        skyone: '#1a365d',
+                        skyoneLight: '#2d5a87',
+                        skyoneAccent: '#4a90e2'
                     }
                 }
             }
@@ -21,35 +20,27 @@
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-purple-100 min-h-screen">
+<body class="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
     
     <!-- Header -->
-    <header class="bg-white shadow-lg border-b border-purple-100">
+    <header class="bg-white shadow-lg border-b border-skyone">
         <div class="container mx-auto px-6 py-4">
             <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-robot text-white text-lg"></i>
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-gradient-to-r from-skyone to-skyoneLight rounded-lg flex items-center justify-center">
+                        <i class="fas fa-file-alt text-white text-xl"></i>
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold text-gray-800">DocAgent LangGraph</h1>
-                        <p class="text-sm text-gray-600">Documentação Automática com IA</p>
+                        <h1 class="text-3xl font-bold text-skyone">Skyone DocAgent</h1>
+                        <p class="text-sm text-skyoneLight font-medium">Documentação Automática com IA • Arquitetura C4</p>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
                     <span id="systemStatus" class="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-sm font-medium">
                         <i class="fas fa-circle animate-pulse mr-1"></i>
-                        Carregando...
+                        Sistema
                     </span>
-                    <span id="langGraphStatus" class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                        <i class="fas fa-project-diagram mr-1"></i>
-                        LangGraph
-                    </span>
-                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                        <i class="fas fa-shield-alt mr-1"></i>
-                        Anônimo
-                    </span>
-                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    <span class="px-3 py-1 bg-skyone text-white rounded-full text-sm font-medium">
                         v3.0
                     </span>
                 </div>
@@ -60,228 +51,97 @@
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-8">
         
-        <!-- Hero Section -->
-        <div class="text-center mb-12">
-            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-3xl p-8 mb-8 text-white shadow-2xl">
-                <h2 class="text-5xl font-bold mb-6">
-                    <i class="fas fa-project-diagram mr-4 animate-pulse"></i>
-                    DocAgent LangGraph
-                    <span class="block text-3xl font-normal text-purple-200 mt-2">Sistema de Documentação com IA</span>
+        <!-- Skyone Hero Section -->
+        <div class="text-center mb-8">
+            <div class="bg-gradient-to-r from-skyone to-skyoneLight rounded-2xl p-8 text-white shadow-xl">
+                <h2 class="text-4xl font-bold mb-4">
+                    <i class="fas fa-sitemap mr-3"></i>
+                    Skyone DocAgent
                 </h2>
-                <p class="text-xl text-purple-100 max-w-4xl mx-auto leading-relaxed">
-                    Plataforma avançada que utiliza LangGraph e modelos de IA (OpenAI/Ollama) para análise técnica completa 
-                    de repositórios GitHub. Gera documentação profissional com relatórios anônimos e download em ZIP.
+                <p class="text-xl text-blue-100 max-w-3xl mx-auto">
+                    Agente inteligente da Skyone para documentação automática com arquitetura C4.
+                    Análise completa de projetos locais com IA avançada.
                 </p>
-                
-                <!-- Feature highlights -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
-                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
-                        <i class="fas fa-project-diagram text-2xl text-yellow-300 mb-2"></i>
-                        <div class="font-semibold">LangGraph</div>
-                        <div class="text-sm text-purple-200">Fluxo de agentes</div>
-                    </div>
-                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
-                        <i class="fas fa-brain text-2xl text-green-300 mb-2"></i>
-                        <div class="font-semibold">OpenAI + Ollama</div>
-                        <div class="text-sm text-purple-200">Modelos avançados</div>
-                    </div>
-                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
-                        <i class="fas fa-shield-alt text-2xl text-blue-300 mb-2"></i>
-                        <div class="font-semibold">100% Anônimo</div>
-                        <div class="text-sm text-purple-200">Dados protegidos</div>
-                    </div>
-                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
-                        <i class="fas fa-file-archive text-2xl text-orange-300 mb-2"></i>
-                        <div class="font-semibold">Download ZIP</div>
-                        <div class="text-sm text-purple-200">Documentação completa</div>
-                    </div>
-                </div>
             </div>
         </div>
 
         <!-- Model Selection Section -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
-            <div class="flex items-center mb-6">
-                <i class="fas fa-brain text-purple-600 text-2xl mr-3"></i>
-                <h3 class="text-2xl font-bold text-gray-800">Configuração do Modelo de IA</h3>
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-brain text-skyoneAccent text-xl mr-3"></i>
+                <h3 class="text-xl font-bold text-skyone">Modelo de IA</h3>
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
-                <!-- OpenAI Configuration -->
-                <div class="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl p-6 border border-green-200">
-                    <div class="flex items-center mb-4">
-                        <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mr-4">
-                            <i class="fas fa-openai text-white text-xl"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-green-800 text-lg">OpenAI GPT</h4>
-                            <p class="text-green-600 text-sm">Modelos avançados em nuvem</p>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-green-700 mb-2">Modelo OpenAI:</label>
-                            <select id="openaiModel" class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                                <option value="gpt-4o">GPT-4o (Recomendado)</option>
-                                <option value="gpt-4o-mini">GPT-4o Mini (Rápido)</option>
-                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Econômico)</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-green-700 mb-2">API Key OpenAI:</label>
-                            <input type="password" id="openaiApiKey" placeholder="sk-..." 
-                                   class="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                            <p class="text-xs text-green-600 mt-1">Sua chave será usada apenas nesta sessão</p>
-                        </div>
-                        
-                        <button type="button" onclick="selecionarOpenAI()" 
-                                class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all font-medium">
-                            <i class="fas fa-check mr-2"></i>
-                            Usar OpenAI
-                        </button>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <!-- OpenAI -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-skyone mb-3">OpenAI GPT</h4>
+                    <select id="openaiModel" class="w-full px-3 py-2 border rounded-lg mb-3">
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="gpt-4o-mini">GPT-4o Mini</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                    </select>
+                    <input type="password" id="openaiApiKey" placeholder="API Key..." 
+                           class="w-full px-3 py-2 border rounded-lg mb-3">
+                    <button onclick="selecionarOpenAI()" 
+                            class="w-full bg-skyoneAccent text-white py-2 rounded-lg hover:bg-skyoneLight transition-all">
+                        Usar OpenAI
+                    </button>
                 </div>
 
-                <!-- Ollama Configuration -->
-                <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 border border-orange-200">
-                    <div class="flex items-center mb-4">
-                        <div class="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mr-4">
-                            <i class="fas fa-server text-white text-xl"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-orange-800 text-lg">Ollama Local</h4>
-                            <p class="text-orange-600 text-sm">Modelos locais e privados</p>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-orange-700 mb-2">Modelo Ollama:</label>
-                            <select id="ollamaModel" class="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500">
-                                <option value="qwen2.5:7b">Qwen2.5 7B (Recomendado)</option>
-                                <option value="llama3.2:3b">Llama 3.2 3B (Rápido)</option>
-                                <option value="codellama:7b">CodeLlama 7B (Código)</option>
-                                <option value="mistral:7b">Mistral 7B</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-orange-700 mb-2">URL Base Ollama:</label>
-                            <input type="text" id="ollamaBaseUrl" value="http://localhost:11434" 
-                                   class="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500">
-                        </div>
-                        
-                        <button type="button" onclick="verificarOllama()" 
-                                class="w-full bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 transition-all mb-2">
-                            <i class="fas fa-check-circle mr-2"></i>
-                            Verificar Ollama
-                        </button>
-                        
-                        <button type="button" onclick="selecionarOllama()" 
-                                class="w-full bg-gradient-to-r from-orange-600 to-red-600 text-white py-3 rounded-lg hover:from-orange-700 hover:to-red-700 transition-all font-medium">
-                            <i class="fas fa-check mr-2"></i>
-                            Usar Ollama
-                        </button>
-                    </div>
+                <!-- Ollama -->
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-skyone mb-3">Ollama Local</h4>
+                    <select id="ollamaModel" class="w-full px-3 py-2 border rounded-lg mb-3">
+                        <option value="qwen2.5:7b">Qwen2.5 7B</option>
+                        <option value="llama3.2:3b">Llama 3.2 3B</option>
+                        <option value="codellama:7b">CodeLlama 7B</option>
+                    </select>
+                    <input type="text" id="ollamaBaseUrl" value="http://localhost:11434" 
+                           class="w-full px-3 py-2 border rounded-lg mb-3">
+                    <button onclick="selecionarOllama()" 
+                            class="w-full bg-skyone text-white py-2 rounded-lg hover:bg-skyoneLight transition-all">
+                        Usar Ollama
+                    </button>
                 </div>
             </div>
             
-            <!-- Current Model Display -->
-            <div id="currentModelInfo" class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-sm font-medium text-gray-700">Modelo Atual:</span>
-                        <span id="currentModelText" class="ml-2 font-bold text-gray-900">Nenhum selecionado</span>
-                    </div>
-                    <div id="modelStatus" class="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-sm">
-                        <i class="fas fa-circle mr-1"></i>
-                        Aguardando seleção
-                    </div>
-                </div>
+            <!-- Current Model -->
+            <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                <span class="text-sm text-gray-700">Modelo: <span id="currentModelText" class="font-semibold">Nenhum</span></span>
+                <span id="modelStatus" class="px-2 py-1 bg-gray-200 text-gray-600 rounded text-sm">
+                    <i class="fas fa-circle mr-1"></i>Aguardando
+                </span>
             </div>
         </div>
 
-        <!-- Search Section -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
-            <div class="flex items-center mb-6">
-                <i class="fas fa-search text-blue-600 text-2xl mr-3"></i>
-                <h3 class="text-2xl font-bold text-gray-800">Busca de Repositórios GitHub</h3>
+        <!-- Directory Selection Section -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-folder text-skyoneAccent text-xl mr-3"></i>
+                <h3 class="text-xl font-bold text-skyone">Diretório do Projeto</h3>
             </div>
             
-            <!-- GitHub Token Section -->
-            <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <label for="githubToken" class="block text-sm font-medium text-blue-700 mb-2">
-                    <i class="fab fa-github mr-2"></i>
-                    Token GitHub (opcional para repositórios privados)
-                </label>
-                <div class="flex">
-                    <input type="password" id="githubToken" placeholder="ghp_..." 
-                           class="flex-1 px-4 py-3 border border-blue-300 rounded-l-lg focus:ring-2 focus:ring-blue-500">
-                    <button type="button" onclick="configurarTokenGitHub()" 
-                            class="bg-blue-600 text-white px-6 py-3 rounded-r-lg hover:bg-blue-700 transition-all">
-                        <i class="fas fa-key mr-2"></i>
-                        Configurar
-                    </button>
-                </div>
-                <p class="text-xs text-blue-600 mt-1">Necessário apenas para repositórios privados</p>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2">
-                    <label for="usuario" class="block text-sm font-medium text-gray-700 mb-2">
-                        Usuário/Organização GitHub ou URL Completa
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div class="lg:col-span-3">
+                    <label for="projectPath" class="block text-sm font-medium text-gray-700 mb-2">
+                        Caminho do Projeto Local
                     </label>
-                    <input type="text" id="usuario" placeholder="Ex: microsoft, google, ou https://github.com/facebook/react"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="projectPath" placeholder="/caminho/para/seu/projeto" 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-skyoneAccent">
+                    <p class="text-xs text-gray-500 mt-1">Informe o caminho completo do diretório do projeto</p>
                 </div>
                 <div class="flex flex-col justify-end">
                     <label class="flex items-center mb-3">
-                        <input type="checkbox" id="incluirForks" class="mr-2 h-4 w-4 text-blue-600">
-                        <span class="text-sm text-gray-700">Incluir Forks</span>
-                    </label>
-                    <label class="flex items-center mb-3">
-                        <input type="checkbox" id="modoAnonimo" class="mr-2 h-4 w-4 text-blue-600" checked>
+                        <input type="checkbox" id="modoAnonimo" class="mr-2 h-4 w-4 text-skyoneAccent" checked>
                         <span class="text-sm text-gray-700">Relatório Anônimo</span>
                     </label>
-                    <button onclick="buscarRepositorios()" id="btnBuscar"
-                            class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all transform hover:scale-105 font-medium">
-                        <i class="fas fa-search mr-2"></i>
-                        Buscar Repositórios
+                    <button onclick="analisarDiretorio()" id="btnAnalisar"
+                            class="bg-gradient-to-r from-skyone to-skyoneLight text-white px-6 py-3 rounded-lg hover:from-skyoneLight hover:to-skyoneAccent transition-all font-medium">
+                        <i class="fas fa-play mr-2"></i>
+                        Iniciar Análise C4
                     </button>
                 </div>
-            </div>
-        </div>
-
-        <!-- Quick Test Section -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
-            <div class="flex items-center mb-6">
-                <i class="fas fa-rocket text-purple-600 text-2xl mr-3"></i>
-                <h3 class="text-2xl font-bold text-gray-800">Testes Rápidos</h3>
-            </div>
-            
-            <div class="flex flex-wrap gap-4 justify-center">
-                <button onclick="testarComMicrosoft()" 
-                        class="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all transform hover:scale-105 shadow-md">
-                    <i class="fab fa-microsoft mr-2"></i>
-                    Testar: Microsoft
-                </button>
-                <button onclick="testarComGoogle()" 
-                        class="bg-gradient-to-r from-red-500 to-orange-500 text-white px-6 py-3 rounded-lg hover:from-red-600 hover:to-orange-600 transition-all transform hover:scale-105 shadow-md">
-                    <i class="fab fa-google mr-2"></i>
-                    Testar: Google
-                </button>
-                <button onclick="testarComFacebook()" 
-                        class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-md">
-                    <i class="fab fa-facebook mr-2"></i>
-                    Testar: Facebook
-                </button>
-                <button onclick="testarComOpenAI()" 
-                        class="bg-gradient-to-r from-green-500 to-teal-500 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-teal-600 transition-all transform hover:scale-105 shadow-md">
-                    <i class="fas fa-brain mr-2"></i>
-                    Testar: OpenAI
-                </button>
             </div>
         </div>
 
@@ -320,47 +180,63 @@
 
         <!-- Analysis Section -->
         <div id="analysisSection" class="hidden">
-            <!-- LangGraph Flow Section -->
-            <div class="bg-gradient-to-r from-purple-900 to-blue-900 rounded-2xl shadow-2xl p-8 mb-8 text-white">
+            <!-- Skyone Analysis Section -->
+            <div class="bg-gradient-to-r from-skyone to-skyoneLight rounded-2xl shadow-2xl p-8 mb-8 text-white">
                 <h3 class="text-3xl font-bold mb-6 flex items-center">
-                    <i class="fas fa-project-diagram mr-4 text-4xl animate-pulse"></i>
+                    <i class="fas fa-sitemap mr-4 text-4xl animate-pulse"></i>
                     <div>
-                        <div>LangGraph Flow</div>
-                        <div class="text-lg font-normal text-purple-200">Fluxo de Agentes IA</div>
+                        <div>Skyone DocAgent</div>
+                        <div class="text-lg font-normal text-blue-200">Arquitetura C4 • LangGraph</div>
                     </div>
                 </h3>
                 
-                <!-- Status Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- C4 Progress Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                     <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
-                        <div class="text-purple-200 text-sm font-medium">Fase Atual</div>
+                        <div class="text-blue-200 text-sm font-medium">Context</div>
+                        <div id="contextStatus" class="text-lg font-bold">Aguardando</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <div class="text-blue-200 text-sm font-medium">Container</div>
+                        <div id="containerStatus" class="text-lg font-bold">Aguardando</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <div class="text-blue-200 text-sm font-medium">Component</div>
+                        <div id="componentStatus" class="text-lg font-bold">Aguardando</div>
+                    </div>
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <div class="text-blue-200 text-sm font-medium">Code</div>
+                        <div id="codeStatus" class="text-lg font-bold">Aguardando</div>
+                    </div>
+                </div>
+                
+                <!-- Main Status -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
+                        <div class="text-blue-200 text-sm font-medium">Fase Atual</div>
                         <div id="phaseText" class="text-xl font-bold">Iniciando...</div>
                     </div>
                     <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
                         <div class="text-blue-200 text-sm font-medium">Progresso</div>
                         <div id="progressText" class="text-xl font-bold">0%</div>
                     </div>
-                    <div class="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur">
-                        <div class="text-green-200 text-sm font-medium">Modelo IA</div>
-                        <div id="currentModelDisplay" class="text-lg font-medium">-</div>
-                    </div>
                 </div>
                 
                 <!-- Progress Bar -->
                 <div class="mb-6">
                     <div class="w-full bg-white bg-opacity-20 rounded-full h-4">
-                        <div id="progressBar" class="bg-gradient-to-r from-green-400 to-blue-400 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        <div id="progressBar" class="bg-gradient-to-r from-skyoneAccent to-blue-400 h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
                     </div>
                 </div>
                 
                 <!-- Status Message -->
-                <div id="statusMessage" class="text-lg text-purple-100 mb-4 p-3 bg-white bg-opacity-10 rounded-lg"></div>
+                <div id="statusMessage" class="text-lg text-blue-100 mb-4 p-3 bg-white bg-opacity-10 rounded-lg"></div>
                 
                 <!-- Logs Display -->
                 <div class="bg-black bg-opacity-40 rounded-lg p-4 border border-white border-opacity-20">
                     <h4 class="font-bold text-lg mb-3 flex items-center">
-                        <i class="fas fa-terminal mr-2 text-green-400"></i>
-                        Logs do LangGraph
+                        <i class="fas fa-terminal mr-2 text-skyoneAccent"></i>
+                        Logs do Skyone Agent
                         <span class="ml-auto text-sm text-gray-300">Tempo Real</span>
                     </h4>
                     <div id="logsContainer" class="max-h-64 overflow-y-auto">
@@ -381,48 +257,15 @@
             </div>
         </div>
 
-        <!-- Features Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
-            <div class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                    <i class="fas fa-project-diagram text-purple-600 text-xl"></i>
-                </div>
-                <h4 class="font-bold text-gray-800 mb-2">LangGraph</h4>
-                <p class="text-gray-600 text-sm">Fluxo de agentes com estado gerenciado</p>
-            </div>
-            
-            <div class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                    <i class="fas fa-brain text-green-600 text-xl"></i>
-                </div>
-                <h4 class="font-bold text-gray-800 mb-2">IA Avançada</h4>
-                <p class="text-gray-600 text-sm">OpenAI GPT-4 ou Ollama local</p>
-            </div>
-            
-            <div class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                    <i class="fas fa-code text-blue-600 text-xl"></i>
-                </div>
-                <h4 class="font-bold text-gray-800 mb-2">Análise Completa</h4>
-                <p class="text-gray-600 text-sm">Estrutura, código e arquitetura</p>
-            </div>
-            
-            <div class="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
-                    <i class="fas fa-download text-orange-600 text-xl"></i>
-                </div>
-                <h4 class="font-bold text-gray-800 mb-2">Documentação Completa</h4>
-                <p class="text-gray-600 text-sm">Markdown profissional + ZIP</p>
-            </div>
-        </div>
+
 
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-8 mt-16">
+    <footer class="bg-skyone text-white py-6 mt-12">
         <div class="container mx-auto px-6 text-center">
-            <p>&copy; 2024 DocAgent LangGraph v3.0 - Sistema de Documentação com IA</p>
-            <p class="text-gray-400 mt-2">LangGraph • OpenAI • Ollama • Relatórios Anônimos</p>
+            <p>&copy; 2024 <strong>Skyone DocAgent</strong> v3.0 - Documentação Automática com Arquitetura C4</p>
+            <p class="text-blue-200 mt-2">Produto Skyone • IA Avançada • LangGraph</p>
         </div>
     </footer>
 
@@ -434,15 +277,16 @@
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🤖 DocAgent LangGraph v3.0 carregado!');
+            console.log('🤖 Skyone DocAgent v3.0 carregado!');
             checkSystemStatus();
             carregarModeloSalvo();
+            carregarModelosOllama();
             
-            // Event listeners
-            document.getElementById('usuario').addEventListener('keypress', function(e) {
+            // Event listener para Enter no campo de diretório
+            document.getElementById('projectPath').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    buscarRepositorios();
+                    analisarDiretorio();
                 }
             });
         });
@@ -561,6 +405,22 @@
             }
         }
 
+        async function carregarModelosOllama() {
+            try {
+                const response = await fetch('/api/models/available');
+                const data = await response.json();
+                
+                if (data.success && data.ollama_detailed) {
+                    atualizarModelosOllama(data.ollama_detailed);
+                    console.log(`✅ ${data.ollama_detailed.length} modelos Ollama carregados`);
+                } else {
+                    console.warn('⚠️ Nenhum modelo Ollama encontrado');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar modelos Ollama:', error);
+            }
+        }
+
         function atualizarModelosOllama(models) {
             const select = document.getElementById('ollamaModel');
             select.innerHTML = '';
@@ -573,9 +433,14 @@
             models.forEach(model => {
                 const option = document.createElement('option');
                 option.value = model.name;
-                option.textContent = model.name;
+                option.textContent = model.display_name || model.name;
                 select.appendChild(option);
             });
+            
+            // Selecionar o primeiro modelo por padrão se houver
+            if (models.length > 0) {
+                select.value = models[0].name;
+            }
         }
 
         function carregarModeloSalvo() {
@@ -668,78 +533,118 @@
             }
         }
 
-        // Test Functions
-        function testarComMicrosoft() {
-            document.getElementById('usuario').value = 'microsoft';
-            buscarRepositorios();
-        }
-
-        function testarComGoogle() {
-            document.getElementById('usuario').value = 'google';
-            buscarRepositorios();
-        }
-
-        function testarComFacebook() {
-            document.getElementById('usuario').value = 'facebook';
-            buscarRepositorios();
-        }
-
-        function testarComOpenAI() {
-            document.getElementById('usuario').value = 'openai';
-            buscarRepositorios();
-        }
-
         // Main Functions
-        async function buscarRepositorios() {
-            const usuario = document.getElementById('usuario').value.trim();
-            const incluirForks = document.getElementById('incluirForks').checked;
-            const btnBuscar = document.getElementById('btnBuscar');
+        async function analisarDiretorio() {
+            const projectPath = document.getElementById('projectPath').value.trim();
+            const btnAnalisar = document.getElementById('btnAnalisar');
             
-            if (!usuario) {
-                alert('Por favor, digite o usuário/organização');
+            if (!currentModel.provider) {
+                alert('Por favor, selecione um modelo de IA primeiro (OpenAI ou Ollama)');
+                return;
+            }
+            
+            if (!projectPath) {
+                alert('Por favor, informe o caminho do diretório do projeto');
                 return;
             }
 
-            console.log(`🔍 Buscando repositórios para: ${usuario}`);
-            
-            btnBuscar.disabled = true;
-            btnBuscar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Buscando...';
-            
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('results').classList.add('hidden');
+            console.log(`🤖 Iniciando análise C4 do diretório: ${projectPath}`);
+
+            // Preparar UI
+            document.getElementById('analysisSection').classList.remove('hidden');
+            document.getElementById('analysisResults').classList.add('hidden');
+
+            // Reset progress
+            resetC4Progress();
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('phaseText').textContent = 'Iniciando Análise C4...';
+            document.getElementById('progressText').textContent = '0%';
+            document.getElementById('statusMessage').textContent = 'Preparando análise do diretório local...';
+            document.getElementById('logs').innerHTML = '';
+
+            btnAnalisar.disabled = true;
+            btnAnalisar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analisando...';
 
             try {
-                const response = await fetch('/api/search', {
+                // Preparar dados da requisição para diretório local
+                const requestData = {
+                    repo_url: `file://${projectPath}`, // Indicar que é um diretório local
+                    model_provider: currentModel.provider,
+                    model_name: currentModel.model,
+                    max_files: 50,
+                    deep_analysis: true,
+                    anonymous: document.getElementById('modoAnonimo')?.checked || true,
+                    local_directory: projectPath
+                };
+
+                const response = await fetch('/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        usuario: usuario,
-                        incluir_forks: incluirForks
-                    })
+                    body: JSON.stringify(requestData)
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    repositorios = data.repositories;
-                    console.log(`✅ ${repositorios.length} repositórios encontrados`);
+                    // Iniciar polling de status
+                    analysisInterval = setInterval(checkAnalysisStatus, 2000);
                     
-                    if (repositorios.length === 0) {
-                        mostrarMensagemNenhumRepo(usuario);
-                    } else {
-                        mostrarRepositorios(repositorios);
-                        popularFiltroLinguagens();
-                    }
+                    document.getElementById('phaseText').textContent = 'Análise C4 iniciada';
+                    document.getElementById('progressBar').style.width = '5%';
+                    document.getElementById('progressText').textContent = '5%';
+                    document.getElementById('statusMessage').textContent = 'Executando análise arquitetural C4...';
+                    
+                    document.getElementById('analysisSection').scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    throw new Error(data.message || 'Erro na busca');
+                    throw new Error(data.message || 'Erro ao iniciar análise');
                 }
             } catch (error) {
-                console.error('❌ Erro na busca:', error);
-                mostrarErroNaBusca(error.message);
+                console.error('❌ Erro ao iniciar análise:', error);
+                
+                document.getElementById('phaseText').textContent = 'Erro na análise';
+                document.getElementById('statusMessage').textContent = `Erro: ${error.message}`;
+                document.getElementById('logs').innerHTML = `<div class="text-red-400">❌ ${error.message}</div>`;
             } finally {
-                btnBuscar.disabled = false;
-                btnBuscar.innerHTML = '<i class="fas fa-search mr-2"></i>Buscar Repositórios';
-                document.getElementById('loading').classList.add('hidden');
+                btnAnalisar.disabled = false;
+                btnAnalisar.innerHTML = '<i class="fas fa-play mr-2"></i>Iniciar Análise C4';
+            }
+        }
+
+        function resetC4Progress() {
+            document.getElementById('contextStatus').textContent = 'Aguardando';
+            document.getElementById('containerStatus').textContent = 'Aguardando';
+            document.getElementById('componentStatus').textContent = 'Aguardando';
+            document.getElementById('codeStatus').textContent = 'Aguardando';
+        }
+
+        function updateC4Progress(phase) {
+            // Reset all to default
+            resetC4Progress();
+            
+            // Update based on current phase
+            switch(phase.toLowerCase()) {
+                case 'cloned':
+                case 'setup':
+                    document.getElementById('contextStatus').textContent = 'Em andamento';
+                    break;
+                case 'analyzed':
+                case 'structure':
+                    document.getElementById('contextStatus').textContent = 'Concluído';
+                    document.getElementById('containerStatus').textContent = 'Em andamento';
+                    break;
+                case 'planned':
+                case 'planning':
+                    document.getElementById('contextStatus').textContent = 'Concluído';
+                    document.getElementById('containerStatus').textContent = 'Concluído';
+                    document.getElementById('componentStatus').textContent = 'Em andamento';
+                    break;
+                case 'completed':
+                case 'concluído':
+                    document.getElementById('contextStatus').textContent = 'Concluído';
+                    document.getElementById('containerStatus').textContent = 'Concluído';
+                    document.getElementById('componentStatus').textContent = 'Concluído';
+                    document.getElementById('codeStatus').textContent = 'Concluído';
+                    break;
             }
         }
 
@@ -821,11 +726,14 @@
                 const response = await fetch('/api/status');
                 const status = await response.json();
 
-                // Atualizar UI
+                // Atualizar UI principal
                 document.getElementById('phaseText').textContent = status.phase || 'Processando...';
                 document.getElementById('progressText').textContent = (status.progress || 0) + '%';
                 document.getElementById('progressBar').style.width = (status.progress || 0) + '%';
                 document.getElementById('statusMessage').textContent = status.message || 'Processando...';
+                
+                // Atualizar progresso C4 baseado na fase atual
+                updateC4Progress(status.phase || '');
                 
                 // Atualizar logs
                 if (status.logs && status.logs.length > 0) {
@@ -833,10 +741,12 @@
                         const timestamp = new Date().toLocaleTimeString();
                         const isError = log.includes('❌');
                         const isSuccess = log.includes('✅');
+                        const isC4 = log.includes('C4') || log.includes('Context') || log.includes('Container') || log.includes('Component');
                         
                         let logClass = 'text-green-300';
                         if (isError) logClass = 'text-red-400';
                         else if (isSuccess) logClass = 'text-green-400';
+                        else if (isC4) logClass = 'text-blue-400';
                         
                         return `<div class="mb-1 ${logClass}">[${timestamp}] ${log}</div>`;
                     }).join('');
@@ -849,6 +759,9 @@
                 if (status.status === 'completed') {
                     clearInterval(analysisInterval);
                     analysisInterval = null;
+                    
+                    // Finalizar todos os C4 como concluído
+                    updateC4Progress('completed');
                     
                     setTimeout(() => {
                         loadAnalysisResults();
@@ -952,155 +865,17 @@
             }
         }
 
-        function mostrarRepositorios(repos) {
-            const container = document.getElementById('repositoriosList');
-            container.innerHTML = '';
+        // Funções removidas - não mais necessárias para busca local
 
-            if (repos.length === 0) {
-                container.innerHTML = '<div class="col-span-full text-center text-gray-500">Nenhum repositório encontrado</div>';
-                document.getElementById('results').classList.remove('hidden');
-                return;
-            }
-
-            repos.slice(0, 15).forEach(repo => {
-                const card = document.createElement('div');
-                card.className = 'bg-gray-50 rounded-xl p-6 hover:shadow-lg transition-all border border-gray-200 hover:border-purple-300';
-                
-                const languageColors = {
-                    'JavaScript': 'text-yellow-600 bg-yellow-100',
-                    'Python': 'text-green-600 bg-green-100',
-                    'TypeScript': 'text-blue-600 bg-blue-100',
-                    'Java': 'text-red-600 bg-red-100',
-                    'Go': 'text-cyan-600 bg-cyan-100',
-                    'Rust': 'text-orange-600 bg-orange-100'
-                };
-                const langColor = languageColors[repo.linguagem_principal] || 'text-gray-600 bg-gray-100';
-                
-                const modelBadge = currentModel.provider ? 
-                    `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full ml-2">
-                        <i class="fas fa-brain mr-1"></i>${currentModel.provider.toUpperCase()}
-                    </span>` : 
-                    '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full ml-2">Selecione modelo</span>';
-                
-                card.innerHTML = `
-                    <div class="flex items-start justify-between mb-4">
-                        <div class="flex-1">
-                            <h4 class="font-bold text-gray-800 text-lg mb-1 hover:text-blue-600 transition-colors cursor-pointer" 
-                               onclick="window.open('${repo.url}', '_blank')">${repo.nome}</h4>
-                            <p class="text-gray-600 text-sm mb-3">${repo.descricao.substring(0, 120)}${repo.descricao.length > 120 ? '...' : ''}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-4 text-sm">
-                            <span class="flex items-center px-2 py-1 rounded-full ${langColor}">
-                                <i class="fas fa-code mr-1"></i>
-                                ${repo.linguagem_principal}
-                            </span>
-                            <span class="flex items-center text-gray-500">
-                                <i class="fas fa-star text-yellow-500 mr-1"></i>
-                                ${repo.estrelas.toLocaleString()}
-                            </span>
-                        </div>
-                        <div class="text-xs text-gray-400">
-                            ${Math.round(repo.tamanho_kb / 1024)} MB
-                        </div>
-                    </div>
-                    
-                    <button type="button" 
-                            onclick="analisarRepositorio('${repo.url}')"
-                            class="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all font-medium transform hover:scale-105"
-                            ${!currentModel.provider ? 'disabled title="Selecione um modelo primeiro"' : ''}>
-                        <i class="fas fa-project-diagram mr-2"></i>
-                        Análise LangGraph
-                        ${modelBadge}
-                    </button>
-                `;
-                
-                container.appendChild(card);
-            });
-
-            document.getElementById('results').classList.remove('hidden');
-            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function mostrarMensagemNenhumRepo(usuario) {
-            const loadingElement = document.getElementById('loading');
-            loadingElement.innerHTML = `
-                <div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-8 text-center">
-                    <i class="fas fa-search text-yellow-600 text-4xl mb-4"></i>
-                    <h3 class="text-xl font-bold text-yellow-800 mb-2">Nenhum repositório encontrado</h3>
-                    <p class="text-yellow-700 mb-4">Não foram encontrados repositórios para "${usuario}"</p>
-                    <button onclick="location.reload()" 
-                            class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700">
-                        Nova Busca
-                    </button>
-                </div>
-            `;
-        }
-
-        function mostrarErroNaBusca(errorMessage) {
-            const loadingElement = document.getElementById('loading');
-            loadingElement.innerHTML = `
-                <div class="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
-                    <i class="fas fa-exclamation-triangle text-red-600 text-4xl mb-4"></i>
-                    <h3 class="text-xl font-bold text-red-800 mb-2">Erro na Busca</h3>
-                    <p class="text-red-700 mb-4">${errorMessage}</p>
-                    <button onclick="location.reload()" 
-                            class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
-                        Tentar Novamente
-                    </button>
-                </div>
-            `;
-        }
-
-        function popularFiltroLinguagens() {
-            const linguagens = [...new Set(repositorios.map(r => r.linguagem_principal))];
-            const filtroLinguagem = document.getElementById('filtroLinguagem');
-            
-            filtroLinguagem.innerHTML = '<option value="">Todas as linguagens</option>';
-            linguagens.forEach(lang => {
-                if (lang !== 'Desconhecida') {
-                    filtroLinguagem.innerHTML += `<option value="${lang}">${lang}</option>`;
+        // Event listeners simplificados
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event listener para Enter no campo de diretório
+            document.getElementById('projectPath').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    analisarDiretorio();
                 }
             });
-        }
-
-        // Event listeners for filters
-        document.addEventListener('DOMContentLoaded', function() {
-            const filtroLinguagem = document.getElementById('filtroLinguagem');
-            const ordenacao = document.getElementById('ordenacao');
-
-            if (filtroLinguagem) {
-                filtroLinguagem.addEventListener('change', function() {
-                    const linguagem = this.value;
-                    const filtrados = linguagem ? 
-                        repositorios.filter(r => r.linguagem_principal === linguagem) : 
-                        repositorios;
-                    mostrarRepositorios(filtrados);
-                });
-            }
-
-            if (ordenacao) {
-                ordenacao.addEventListener('change', function() {
-                    const tipo = this.value;
-                    const ordenados = [...repositorios];
-                    
-                    switch(tipo) {
-                        case 'stars':
-                            ordenados.sort((a, b) => b.estrelas - a.estrelas);
-                            break;
-                        case 'name':
-                            ordenados.sort((a, b) => a.nome.localeCompare(b.nome));
-                            break;
-                        case 'updated':
-                            ordenados.sort((a, b) => new Date(b.atualizado_em) - new Date(a.atualizado_em));
-                            break;
-                    }
-                    
-                    mostrarRepositorios(ordenados);
-                });
-            }
         });
 
         // Cleanup
