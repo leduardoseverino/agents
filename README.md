@@ -1,63 +1,88 @@
-# 🚀 DocAgent Skyone v2.0
+# 🚀 Skyone DocAgent v3.0
 
-**Plataforma Avançada de Análise e Documentação Automática de Repositórios**
+**Plataforma Avançada de Análise e Documentação Automática com Arquitetura C4**
 
-DocAgent Skyone v2.0 é uma solução completa para análise automatizada de repositórios de código, gerando documentação técnica abrangente usando tecnologias de ponta como AG2 (AutoGen 2.0) e modelo C4.
+Skyone DocAgent v3.0 é uma solução completa para análise automatizada de projetos de código, gerando documentação técnica abrangente usando tecnologias de ponta como LangGraph, OpenAI/Ollama e modelo C4.
 
 ## ✨ Principais Funcionalidades
 
-### 🤖 **AG2 Multi-Agent Analysis**
-- Sistema multi-agente baseado em AutoGen 2.0
+### 🤖 **LangGraph Multi-Agent Analysis**
+- Sistema multi-agente baseado em LangGraph
 - Análise colaborativa entre agentes especializados
 - Documentação técnica detalhada e precisa
 - Suporte a múltiplas linguagens de programação
 
 ### 🏗️ **C4 Model Documentation**
 - Documentação arquitetural seguindo o padrão C4
-- Diagramas de Contexto, Contêiner, Componente e Deploy
-- Integração com PlantUML para visualizações profissionais
+- Diagramas de Contexto, Contêiner, Componente e Código
+- Integração com Mermaid para visualizações profissionais
 - Análise automática de tecnologias e dependências
 
-### 🔐 **Sistema de Autenticação**
-- Autenticação local com usuário/senha
-- Integração OAuth com GitHub
-- Suporte completo ao GitHub Enterprise
-- Gestão de sessões e tokens seguros
+### 🔬 **Análise Técnica Detalhada**
+- Análise linha por linha de código
+- Relatório estrutural profundo
+- Guia técnico de implementação
+- Fluxogramas Mermaid separados
 
 ### 📊 **Interface Web Moderna**
-- Dashboard responsivo com Tailwind CSS
-- Análise em tempo real com logs detalhados
+- Dashboard responsivo com cores Skyone
+- Análise em tempo real com progresso das 8 etapas
 - Download automático de documentação
 - Interface intuitiva e amigável
 
-### 🌐 **GitHub Integration**
-- Suporte ao GitHub.com e GitHub Enterprise
-- Clonagem automática de repositórios
-- Análise de repositórios públicos e privados
-- Configuração flexível de tokens de acesso
+### 🧠 **Suporte Multi-LLM**
+- OpenAI GPT-4o, GPT-4 Turbo, GPT-3.5 Turbo
+- Ollama local com detecção automática de modelos
+- Configuração flexível de modelos de IA
+- Fallbacks inteligentes para máxima compatibilidade
+
+### 🏗️ Arquitetura do Sistema
+
+```mermaid
+flowchart TD
+    A[🚀 Início] --> B[🧠 Configurar Modelo IA]
+    B --> C[📁 Selecionar Diretório Local]
+    C --> D[🔍 Analisar Estrutura]
+    D --> E[📋 Gerar Plano C4]
+    
+    E --> F[🌐 C4 Context Diagram]
+    F --> G[📦 C4 Container Diagram]
+    G --> H[🧩 C4 Component Diagram]
+    H --> I[💻 C4 Code Analysis]
+    
+    I --> J[🔬 Detailed Code Analysis]
+    J --> K[📊 Structure Report]
+    K --> L[🛠️ Implementation Guide]
+    L --> M[🔄 Mermaid Flowcharts]
+    
+    M --> N[✅ Documentação Completa]
+    
+    style A fill:#1a365d,color:#fff
+    style N fill:#4a90e2,color:#fff
+```
 
 ## 🛠️ **Tecnologias**
 
-- **Backend**: Python 3.8+, FastAPI, Pydantic
-- **AI/ML**: AutoGen 2.0 (AG2), OpenAI GPT
+- **Backend**: Python 3.8+, FastAPI, LangGraph, Pydantic
+- **AI/ML**: LangGraph, OpenAI GPT-4, Ollama Local
 - **Frontend**: HTML5, Tailwind CSS, JavaScript
-- **Documentation**: Markdown, PlantUML, C4 Model
-- **Integration**: GitHub API, OAuth 2.0
+- **Documentation**: Markdown, Mermaid, C4 Model
+- **Integration**: Playwright, Chart Generation
 
 ## 📋 **Pré-requisitos**
 
 - Python 3.8 ou superior
 - Git instalado no sistema
 - Conexão com internet para APIs
-- (Opcional) Token do OpenAI para funcionalidades AG2
-- (Opcional) Token do GitHub para repositórios privados
+- (Opcional) OpenAI API Key para modelos GPT
+- (Opcional) Ollama instalado para modelos locais
 
 ## 🚀 **Instalação**
 
 ### 1. Clone o Repositório
 ```bash
-git clone https://github.com/seu-usuario/docagent-skyone.git
-cd docagent-skyone
+git clone https://github.com/skyone/docagent-v3.git
+cd agents
 ```
 
 ### 2. Instale as Dependências
@@ -67,144 +92,147 @@ pip install -r requirements.txt
 
 ### 3. Configure as Variáveis de Ambiente (Opcional)
 ```bash
-# Para funcionalidades AG2
+# Para funcionalidades OpenAI
 export OPENAI_API_KEY="sua_api_key_openai"
 
 # Para repositórios privados do GitHub
 export GITHUB_TOKEN="seu_token_github"
 
 # Para Ollama (alternativa local)
-export OLLAMA_MODEL="llama2"
+export OLLAMA_MODEL="qwen2.5:7b"
 ```
 
 ### 4. Execute a Aplicação
 ```bash
-python Docagenta.py
+python3 Docagent_Skyone.py
 ```
 
 ### 5. Acesse a Interface Web
-Abra seu navegador e acesse: `http://localhost:8000`
+Abra seu navegador e acesse: `http://localhost:8001`
 
 ## 📖 **Como Usar**
 
-### 1. **Autenticação**
-- Faça login com credenciais locais (admin/admin por padrão)
-- Ou configure autenticação GitHub OAuth
-- Para GitHub Enterprise, configure a URL do servidor
+### 1. **Configuração de Modelo**
+- Selecione entre OpenAI GPT ou Ollama local
+- Configure API Key do OpenAI (se aplicável)
+- Clique "Atualizar Lista" para carregar modelos Ollama
+- Teste a conexão com o modelo selecionado
 
-### 2. **Análise de Repositório**
-- Insira a URL do repositório GitHub
-- Escolha entre análise com ou sem AG2
-- Configure tokens de acesso se necessário
-- Inicie a análise e acompanhe o progresso
+### 2. **Análise de Projeto**
+- Insira o caminho do diretório local do projeto
+- Escolha entre análise com ou sem anonimização
+- Configure parâmetros de análise se necessário
+- Inicie a análise e acompanhe o progresso das 8 etapas
 
 ### 3. **Documentação Gerada**
 A análise produz os seguintes arquivos:
 
-#### **Documentação Tradicional**
-- `01_relatorio_completo.md` - Análise técnica detalhada
-- `02_guia_instalacao.md` - Guia de instalação e uso
-- `03_documentacao_api.md` - Documentação de APIs (se aplicável)
-
 #### **Documentação C4 Model**
-- `04_C4_Architecture_Overview.md` - Visão geral da arquitetura
-- `05_C4_Context_Diagram.md` - Diagrama de contexto
-- `06_C4_Container_Diagram.md` - Diagrama de contêineres
-- `07_C4_Component_Diagram.md` - Diagrama de componentes
-- `08_C4_Deployment_Guide.md` - Guia de deploy
+- `01_C4_Context_Diagram.md` - Diagrama de contexto
+- `02_C4_Container_Diagram.md` - Diagrama de contêineres
+- `03_C4_Component_Diagram.md` - Diagrama de componentes
+- `04_C4_Code_Analysis.md` - Análise de código C4
+
+#### **Análise Técnica Detalhada**
+- `05_Detailed_Code_Analysis.md` - Análise linha por linha
+- `06_Code_Structure_Report.md` - Relatório estrutural
+- `07_Technical_Implementation_Guide.md` - Guia de implementação
+- `08_Mermaid_Flowcharts.md` - Fluxogramas detalhados
 
 ### 4. **Download dos Arquivos**
 - Download individual de cada arquivo
 - Download em lote (ZIP) de toda a documentação
 - Suporte a modo anônimo para relatórios sem identificação
+- Chart visual do workflow LangGraph
 
 ## ⚙️ **Configuração**
 
-### **Autenticação Local**
-Edite as credenciais padrão no código:
-```python
-VALID_USERS = {
-    "admin": "admin",  # usuário: senha
-    "user": "password"
-}
+### **Configuração de Modelos**
+Configure através da interface web:
+1. Acesse "Modelo de IA"
+2. Selecione "OpenAI GPT" ou "Ollama Local"
+3. Para OpenAI: Insira API Key
+4. Para Ollama: Clique "Atualizar Lista" para carregar modelos
+5. Teste a conexão
+
+### **Diretório Local**
+Configure o projeto a ser analisado:
+```bash
+# Exemplo de caminho
+/home/usuario/meu-projeto
+/Users/usuario/Documents/projeto
+C:\Users\usuario\projeto
 ```
 
-### **GitHub Enterprise**
-Configure através da interface web:
-1. Acesse "Configuração GitHub"
-2. Selecione "GitHub Enterprise"
-3. Insira URL do servidor e token
-4. Teste a conexão
-
-### **AG2 Configuration**
+### **LangGraph Configuration**
 O sistema detecta automaticamente:
 - OpenAI API (via variável de ambiente)
 - Ollama (se instalado localmente)
-- Azure OpenAI (configuração manual)
+- Playwright (para geração de charts)
+
+
 
 ## 🔌 **API Endpoints**
 
-### **Autenticação**
-- `POST /api/auth/login` - Login local
-- `GET /api/auth/status` - Status de autenticação
-- `POST /api/auth/logout` - Logout
-
-### **GitHub Integration**
-- `POST /api/auth/github` - Configurar token GitHub
-- `POST /api/auth/github-enterprise` - Configurar GitHub Enterprise
-- `POST /api/search` - Buscar repositórios
+### **Modelo de IA**
+- `GET /api/models/available` - Listar modelos OpenAI e Ollama
+- `POST /api/configure-model` - Configurar modelo ativo
+- `POST /api/test-model` - Testar conexão com modelo
 
 ### **Análise**
-- `POST /api/analyze` - Iniciar análise
-- `GET /api/status` - Status da análise
+- `POST /api/analyze` - Iniciar análise C4 + Detalhada
+- `GET /api/status` - Status da análise em tempo real
 - `GET /api/results` - Resultados da análise
 
 ### **Downloads**
 - `GET /api/download/{filename}` - Download de arquivo específico
-- `GET /api/download-all` - Download de todos os arquivos (ZIP)
+- `GET /api/download-all-zip` - Download de todos os arquivos (ZIP)
+- `GET /api/generate-mermaid-chart` - Chart visual do workflow
 
 ### **Logs**
-- `GET /api/logs` - Obter logs detalhados
-- `POST /api/logs/clear` - Limpar logs
+- `GET /health` - Health check do sistema
+- `GET /docs` - Documentação automática da API
 
 ## 🏗️ **Arquitetura do Sistema**
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend       │    │   External      │
-│   (Web UI)      │◄──►│   (FastAPI)     │◄──►│   (GitHub API)  │
+│   (Web UI)      │◄──►│   (FastAPI)     │◄──►│   (OpenAI/Ollama)│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
                                 │
                        ┌─────────────────┐
-                       │   AG2 Agents    │
-                       │   (Analysis)    │
+                       │  LangGraph      │
+                       │  (Agents)       │
                        └─────────────────┘
                                 │
                        ┌─────────────────┐
-                       │   C4 Analyzer   │
-                       │   (Architecture)│
+                       │  C4 + Analysis  │
+                       │  (Documentation)│
                        └─────────────────┘
 ```
 
 ## 📁 **Estrutura do Projeto**
 
 ```
-docagent-skyone/
-├── Docagenta.py              # Aplicação principal
+skyone-docagent/
+├── Docagent_Skyone.py      # Aplicação principal
+├── config.py               # Configurações
 ├── templates/
-│   └── index.html           # Interface web
-├── static/                  # Arquivos estáticos
-├── docs/                    # Documentação gerada
-├── workdir/                 # Diretório de trabalho
-├── requirements.txt         # Dependências Python
-└── README.md               # Este arquivo
+│   └── index.html         # Interface web
+├── static/                # Arquivos estáticos
+├── docs/                  # Documentação gerada
+├── workdir/              # Diretório de trabalho
+├── logs/                 # Logs do sistema
+├── requirements.txt       # Dependências Python
+└── README.md             # Este arquivo
 ```
 
 ## 🔧 **Desenvolvimento**
 
 ### **Executar em Modo Debug**
 ```bash
-python Docagenta.py --debug
+DEBUG=True python3 Docagent_Skyone.py
 ```
 
 ### **Executar Testes**
@@ -214,16 +242,16 @@ python -m pytest tests/
 
 ### **Linting**
 ```bash
-flake8 Docagenta.py
-black Docagenta.py
+flake8 Docagent_Skyone.py
+black Docagent_Skyone.py
 ```
 
 ## 🤝 **Contribuindo**
 
 1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+2. Crie uma branch para sua feature (`git checkout -b feature/NovaFuncionalidade`)
+3. Commit suas mudanças (`git commit -m 'Adiciona nova funcionalidade'`)
+4. Push para a branch (`git push origin feature/NovaFuncionalidade`)
 5. Abra um Pull Request
 
 ## 📝 **Licença**
@@ -232,7 +260,7 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 
 ## 🐛 **Reportar Bugs**
 
-Encontrou um bug? Abra uma [issue](https://github.com/seu-usuario/docagent-skyone/issues) com:
+Encontrou um bug? Abra uma [issue](https://github.com/skyone/docagent-v3/issues) com:
 - Descrição detalhada do problema
 - Passos para reproduzir
 - Ambiente (SO, Python version, etc.)
@@ -258,26 +286,29 @@ Encontrou um bug? Abra uma [issue](https://github.com/seu-usuario/docagent-skyon
 
 ## 📞 **Suporte**
 
-- **Documentação**: [Wiki do Projeto](https://github.com/seu-usuario/docagent-skyone/wiki)
-- **Issues**: [GitHub Issues](https://github.com/seu-usuario/docagent-skyone/issues)
-- **Discussões**: [GitHub Discussions](https://github.com/seu-usuario/docagent-skyone/discussions)
+- **Documentação**: [Wiki do Projeto](https://github.com/skyone/docagent-v3/wiki)
+- **Issues**: [GitHub Issues](https://github.com/skyone/docagent-v3/issues)
+- **Interface**: `http://localhost:8001`
+- **API Docs**: `http://localhost:8001/docs`
 
 ## 🏆 **Créditos**
 
-- **AutoGen Framework**: Microsoft Research
+- **LangGraph Framework**: LangChain Team
 - **C4 Model**: Simon Brown
 - **FastAPI**: Sebastian Ramirez
 - **Tailwind CSS**: Tailwind Labs
+- **Mermaid**: Mermaid Team
 
 ## 📊 **Status do Projeto**
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
+![LangGraph](https://img.shields.io/badge/LangGraph-0.6.6+-purple.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Latest-green.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)
 
 ---
 
-**DocAgent Skyone v2.0** - Transformando código em documentação profissional automaticamente 🚀
+**Skyone DocAgent v3.0** - Transformando código em documentação profissional automaticamente 🚀
 
-*Desenvolvido com ❤️ para a comunidade de desenvolvedores*
+*Desenvolvido com ❤️ pela equipe Skyone para a comunidade de desenvolvedores*
