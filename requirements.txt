@@ -1,13 +1,55 @@
+# Skyone DocAgent v3.0 - Requirements
+# =====================================
+# Sistema de Documentação Automática com Arquitetura C4 + Análise Detalhada
+# LangGraph + OpenAI/Ollama + FastAPI + Mermaid
+
+# Core LangGraph & LangChain
+langgraph>=0.6.6
+langgraph-checkpoint>=2.1.1
+langgraph-prebuilt>=0.6.4
+langgraph-sdk>=0.2.4
+langchain>=0.3.27
+langchain-core>=0.3.75
+langchain-community>=0.3.29
+langchain-openai>=0.3.32
+langchain-ollama>=0.1.1
+langchain-text-splitters>=0.3.10
+langchainhub>=0.1.21
+
+# Web Framework & API
 fastapi>=0.104.0
-uvicorn>=0.24.0
-jinja2>=3.1.0
-pydantic>=2.0.0
+uvicorn[standard]>=0.24.0
+jinja2>=3.1.2
 python-multipart>=0.0.6
-langgraph>=0.2.0
-langchain>=0.3.0
-langchain-openai>=0.2.0
-langchain-community>=0.3.0
-langchain-core>=0.3.0
-openai>=1.0.0
+
+# Data Validation & Models
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Mermaid & Chart Generation
+playwright>=1.55.0
+pillow>=10.0.0
+IPython>=8.17.0
+
+# File Processing & Analysis
+pathlib2>=2.3.7
+chardet>=5.2.0
+
+# HTTP & Networking
+httpx>=0.25.0
 requests>=2.31.0
-aiofiles>=23.0.0
+
+# Development & Logging
+python-dotenv>=1.0.0
+colorlog>=6.8.0
+
+# Testing (opcional)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+
+# Utilities
+python-dateutil>=2.8.2
+typing-extensions>=4.8.0
+
+# Instalação dos browsers para Playwright (executar após pip install)
+# playwright install chromium
