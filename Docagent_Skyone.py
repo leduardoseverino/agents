@@ -15,7 +15,7 @@ Características:
 - Sistema de tools avançadas para análise de código
 - Arquitetura C4 Model para documentação arquitetural
 
-- DocAgent Skyone v3.0 LangGraph 
+Autor: DocAgent Skyone v3.0 LangGraph
 """
 
 import os
@@ -1373,16 +1373,11 @@ ANÁLISE DO REPOSITÓRIO:
 
 {dependencies}
 
-<<<<<<< HEAD
 Crie um plano JSON com 8 seções seguindo o modelo C4 + Análise Detalhada:
-=======
-Crie um plano JSON com exatamente 4 seções seguindo o modelo C4:
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 1. "C4 Context Diagram" - visão geral do sistema e interações externas
 2. "C4 Container Diagram" - contêineres e tecnologias principais
 3. "C4 Component Diagram" - componentes internos e suas responsabilidades
 4. "C4 Code Analysis" - análise detalhada do código e estrutura
-<<<<<<< HEAD
 5. "Detailed Code Analysis" - análise técnica profunda linha por linha
 6. "Code Structure Report" - relatório estrutural detalhado
 7. "Technical Implementation Guide" - guia técnico de implementação
@@ -1391,12 +1386,6 @@ Crie um plano JSON com exatamente 4 seções seguindo o modelo C4:
 Formato JSON obrigatório:
 {{
   "overview": "Documentação completa C4 + Análise Detalhada do projeto Skyone",
-=======
-
-Formato JSON obrigatório:
-{{
-  "overview": "Documentação arquitetural C4 do projeto Skyone",
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
   "sections": [
     {{
       "title": "C4 Context Diagram",
@@ -1417,7 +1406,6 @@ Formato JSON obrigatório:
       "title": "C4 Code Analysis",
       "description": "Análise detalhada do código, classes e implementação",
       "content_type": "c4_code"
-<<<<<<< HEAD
     }},
     {{
       "title": "Detailed Code Analysis",
@@ -1438,8 +1426,6 @@ Formato JSON obrigatório:
       "title": "Mermaid Flowcharts",
       "description": "Fluxogramas detalhados dos componentes e processos",
       "content_type": "mermaid_flowcharts"
-=======
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
     }}
   ]
 }}
@@ -1474,26 +1460,17 @@ Responda APENAS com o JSON válido.
                     
             except Exception as e:
                 logger.warning(f"Erro ao extrair plano JSON: {e}")
-<<<<<<< HEAD
                 # Plano padrão C4 com análise detalhada de código
                 state["documentation_plan"] = {
                     "overview": "Documentação completa C4 + Análise Detalhada do projeto Skyone",
-=======
-                # Plano padrão C4 com fluxogramas
-                state["documentation_plan"] = {
-                    "overview": "Documentação arquitetural C4 do projeto Skyone",
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
                     "sections": [
                         {"title": "C4 Context Diagram", "description": "Visão contextual do sistema", "content_type": "c4_context"},
                         {"title": "C4 Container Diagram", "description": "Contêineres e tecnologias", "content_type": "c4_container"},
                         {"title": "C4 Component Diagram", "description": "Componentes internos", "content_type": "c4_component"},
                         {"title": "C4 Code Analysis", "description": "Análise detalhada do código", "content_type": "c4_code"},
-<<<<<<< HEAD
                         {"title": "Detailed Code Analysis", "description": "Análise técnica profunda do código", "content_type": "detailed_code_analysis"},
                         {"title": "Code Structure Report", "description": "Relatório estrutural detalhado", "content_type": "code_structure_report"},
                         {"title": "Technical Implementation Guide", "description": "Guia técnico de implementação", "content_type": "technical_implementation"},
-=======
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
                         {"title": "Mermaid Flowcharts", "description": "Fluxogramas detalhados dos componentes", "content_type": "mermaid_flowcharts"}
                     ]
                 }
@@ -1607,7 +1584,6 @@ Responda APENAS com o JSON válido.
             # Anonimizar URL se necessário
             final_url = self.anonymizer.anonymize_repo_url(repo_url) if anonymous else repo_url
             
-<<<<<<< HEAD
             # Limitar tamanho do contexto para evitar "Chunk too big"
             structure_info = state.get("file_structure", {})
             limited_structure_info = self._limit_context_size(structure_info)
@@ -1628,18 +1604,6 @@ Responda APENAS com o JSON válido.
                 prompt = self._create_code_structure_report_prompt(section, limited_structure_info, final_url)
             elif content_type == "technical_implementation":
                 prompt = self._create_technical_implementation_prompt(section, limited_structure_info, final_url)
-=======
-            if content_type == "c4_context":
-                prompt = self._create_c4_context_prompt(section, state, final_url)
-            elif content_type == "c4_container":
-                prompt = self._create_c4_container_prompt(section, state, final_url)
-            elif content_type == "c4_component":
-                prompt = self._create_c4_component_prompt(section, state, final_url)
-            elif content_type == "c4_code":
-                prompt = self._create_c4_code_prompt(section, state, final_url)
-            elif content_type == "mermaid_flowcharts":
-                prompt = self._create_mermaid_flowcharts_prompt(section, state, final_url)
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
             elif content_type == "overview":
                 prompt = self._create_overview_prompt(section, state, final_url)
             elif content_type == "installation":
@@ -1773,14 +1737,8 @@ Crie documentação técnica em Markdown com:
 Use APENAS dados da análise real dos arquivos.
 """
     
-<<<<<<< HEAD
     def _create_c4_context_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
         """Cria prompt para C4 Context Diagram"""
-=======
-    def _create_c4_context_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
-        """Cria prompt para C4 Context Diagram"""
-        structure_info = state.get("file_structure", {})
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Crie uma documentação C4 CONTEXT DIAGRAM baseada na análise real:
@@ -1832,14 +1790,8 @@ C4Context
 Use APENAS informações da análise real fornecida.
 """
 
-<<<<<<< HEAD
     def _create_c4_container_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
         """Cria prompt para C4 Container Diagram"""
-=======
-    def _create_c4_container_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
-        """Cria prompt para C4 Container Diagram"""
-        structure_info = state.get("file_structure", {})
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Você é um especialista em arquitetura C4. Crie uma documentação C4 CONTAINER DIAGRAM baseada EXCLUSIVAMENTE na análise real:
@@ -1916,14 +1868,8 @@ C4Container
 IMPORTANTE: Use SOMENTE dados REAIS da análise. NÃO invente contêineres, bancos de dados ou APIs.
 """
 
-<<<<<<< HEAD
     def _create_c4_component_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
         """Cria prompt para C4 Component Diagram"""
-=======
-    def _create_c4_component_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
-        """Cria prompt para C4 Component Diagram"""
-        structure_info = state.get("file_structure", {})
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Você é um especialista em arquitetura de software e documentação C4. Crie uma documentação C4 COMPONENT DIAGRAM baseada EXCLUSIVAMENTE na análise detalhada real fornecida.
@@ -1998,14 +1944,8 @@ C4Component
 IMPORTANTE: Use SOMENTE informações REAIS da análise fornecida. NÃO invente componentes genéricos.
 """
 
-<<<<<<< HEAD
     def _create_c4_code_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
         """Cria prompt para C4 Code Analysis"""
-=======
-    def _create_c4_code_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
-        """Cria prompt para C4 Code Analysis"""
-        structure_info = state.get("file_structure", {})
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Crie uma documentação C4 CODE ANALYSIS baseada na análise detalhada do código:
@@ -2065,14 +2005,8 @@ classDiagram
 Use APENAS dados reais da análise dos arquivos fornecida.
 """
 
-<<<<<<< HEAD
     def _create_mermaid_flowcharts_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
         """Cria prompt para fluxogramas Mermaid detalhados"""
-=======
-    def _create_mermaid_flowcharts_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
-        """Cria prompt para fluxogramas Mermaid detalhados"""
-        structure_info = state.get("file_structure", {})
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Você é um especialista em fluxogramas e diagramas Mermaid. Crie fluxogramas detalhados baseados EXCLUSIVAMENTE na análise real do código.
@@ -2104,7 +2038,6 @@ INSTRUÇÕES CRÍTICAS:
 
 ```mermaid
 flowchart TD
-<<<<<<< HEAD
     Start([Inicio do Sistema]) --> Init[Inicializacao]
     Init --> Config[Carregar Configuracao]
     Config --> Main[Funcao Principal]
@@ -2116,17 +2049,6 @@ flowchart TD
     style End fill:#c8e6c9
     style Main fill:#f3e5f5
     style Process fill:#fff3e0
-=======
-    [Para cada função/processo REAL identificado, crie um nó]
-    [Exemplo: A[FuncaoRealPrincipal] --> B[FuncaoRealSecundaria]]
-    [Use nomes REAIS das funções da análise]
-    
-    [Conecte baseado nas chamadas de função REAIS identificadas]
-    [Adicione decisões baseadas em condicionais REAIS do código]
-    
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ### Fluxograma de Processamento de Dados
@@ -2134,7 +2056,6 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-<<<<<<< HEAD
     Input[Entrada de Dados] --> Validate[Validar Dados]
     Validate --> Transform[Transformar]
     Transform --> Store[Armazenar]
@@ -2145,15 +2066,6 @@ flowchart LR
     
     style Input fill:#e3f2fd
     style Output fill:#e8f5e8
-=======
-    [Baseado nos fluxos REAIS de dados identificados]
-    [Use funções REAIS que manipulam dados]
-    
-    subgraph "Módulo Real"
-        [FuncaoRealEntrada] --> [FuncaoRealProcessamento]
-        [FuncaoRealProcessamento] --> [FuncaoRealSaida]
-    end
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ### Fluxograma de Interação entre Módulos
@@ -2161,7 +2073,6 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-<<<<<<< HEAD
     subgraph "Módulo Principal"
         MainFunc[Função Principal]
         Helper[Função Auxiliar]
@@ -2178,23 +2089,6 @@ flowchart TB
     
     style MainFunc fill:#f3e5f5
     style SecFunc fill:#e8f5e8
-=======
-    [Para cada arquivo/módulo REAL:]
-    
-    subgraph "[NomeModuloReal1]"
-        [FuncaoReal1]
-        [FuncaoReal2]
-    end
-    
-    subgraph "[NomeModuloReal2]"
-        [FuncaoReal3]
-        [FuncaoReal4]
-    end
-    
-    [Conecte baseado nos imports REAIS]
-    [FuncaoReal1] --> [FuncaoReal3]
-    [FuncaoReal2] --> [FuncaoReal4]
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ### Fluxograma de Tratamento de Erros
@@ -2202,7 +2096,6 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-<<<<<<< HEAD
     Try[Executar Operacao] --> Success{{Sucesso}}
     Success -->|Sim| Continue[Continuar]
     Success -->|Nao| Catch[Capturar Erro]
@@ -2214,9 +2107,6 @@ flowchart TD
     style Try fill:#e3f2fd
     style Catch fill:#ffebee
     style End fill:#e8f5e8
-=======
-    [Baseado em try/catch ou tratamento de erro REAL encontrado]
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ### Fluxograma de Configuração e Inicialização
@@ -2224,7 +2114,6 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-<<<<<<< HEAD
     Start([Inicio]) --> LoadEnv[Carregar Variaveis de Ambiente]
     LoadEnv --> ReadConfig[Ler Arquivos de Configuracao]
     ReadConfig --> Validate[Validar Configuracoes]
@@ -2234,10 +2123,6 @@ flowchart TD
     style Start fill:#e1f5fe
     style Ready fill:#c8e6c9
     style Setup fill:#f3e5f5
-=======
-    [Baseado nos arquivos de configuração REAIS encontrados]
-    [Use funções REAIS de inicialização identificadas]
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ## 📋 Descrição dos Fluxogramas
@@ -2261,7 +2146,6 @@ flowchart TD
 IMPORTANTE: Crie APENAS fluxogramas baseados em código REAL analisado. NÃO invente processos genéricos.
 """
 
-<<<<<<< HEAD
     def _create_detailed_code_analysis_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
         """Cria prompt para análise detalhada linha por linha do código"""
         
@@ -2679,8 +2563,6 @@ INSTRUÇÕES CRÍTICAS:
 IMPORTANTE: Use SOMENTE padrões e implementações REAIS identificadas na análise.
 """
 
-=======
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
     def _create_general_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
         """Cria prompt genérico"""
         return f"""
@@ -2736,7 +2618,6 @@ detalhada do código-fonte do projeto.
             return f"02_C4_Container_Diagram{suffix}.md"
         elif "component" in title_lower:
             return f"03_C4_Component_Diagram{suffix}.md"
-<<<<<<< HEAD
         elif "c4" in title_lower and "code" in title_lower:
             return f"04_C4_Code_Analysis{suffix}.md"
         elif "detailed" in title_lower and "code" in title_lower:
@@ -2747,12 +2628,6 @@ detalhada do código-fonte do projeto.
             return f"07_Technical_Implementation_Guide{suffix}.md"
         elif "mermaid" in title_lower or "flowchart" in title_lower:
             return f"08_Mermaid_Flowcharts{suffix}.md"
-=======
-        elif "code" in title_lower:
-            return f"04_C4_Code_Analysis{suffix}.md"
-        elif "mermaid" in title_lower or "flowchart" in title_lower:
-            return f"05_Mermaid_Flowcharts{suffix}.md"
->>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         elif "visão" in title_lower or "geral" in title_lower:
             return f"01_visao_geral{suffix}.md"
         elif "instalação" in title_lower or "guia" in title_lower:
