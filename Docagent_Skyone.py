@@ -50,7 +50,6 @@ except ImportError:
 # LangGraph e LangChain imports
 try:
     from langgraph.graph import StateGraph, END
-    from langgraph.prebuilt import ToolNode
     from langgraph.checkpoint.memory import MemorySaver
     from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
     from langchain_core.tools import tool
@@ -58,10 +57,37 @@ try:
     from langchain_openai import ChatOpenAI
     from langchain_community.llms import Ollama
     from langchain_core.runnables import RunnableConfig
+    
+    # Tentar importar ToolNode da versão mais recente
+    try:
+        from langgraph.prebuilt import ToolNode
+    except ImportError:
+        ToolNode = None
+        print("⚠️ ToolNode não disponível")
+    
+    # Importações para Mermaid nativo do LangGraph
+    try:
+        from IPython.display import Image, display
+        MERMAID_NATIVE_AVAILABLE = True
+        print("✅ Mermaid nativo disponível")
+    except ImportError:
+        MERMAID_NATIVE_AVAILABLE = False
+        print("⚠️ Mermaid nativo não disponível")
+    
+    # Importações para geração PNG com Playwright
+    try:
+        from playwright.sync_api import sync_playwright
+        PLAYWRIGHT_AVAILABLE = True
+        print("✅ Playwright disponível para PNG")
+    except ImportError:
+        PLAYWRIGHT_AVAILABLE = False
+        print("⚠️ Playwright não disponível")
+    
     LANGGRAPH_AVAILABLE = True
     print("✅ LangGraph e LangChain disponíveis")
 except ImportError as e:
     LANGGRAPH_AVAILABLE = False
+    MERMAID_NATIVE_AVAILABLE = False
     print(f"❌ LangGraph/LangChain não disponível: {e}")
     print("Execute: pip install langgraph langchain langchain-openai langchain-community")
 
@@ -229,8 +255,13 @@ class AnonymizationSystem:
         print("🔒 Sistema de anonimização inicializado")
     
     def anonymize_repo_url(self, url: str) -> str:
-        """Anonimiza URL do repositório"""
+        """Anonimiza URL do repositório ou diretório local"""
         try:
+            # Anonimizar diretório local
+            if url.startswith("file://"):
+                return "file:///projeto_local_anonimo"
+            
+            # Anonimizar URL GitHub
             match = re.search(r'github\.com/([^/]+)/([^/]+)', url)
             if match:
                 user, repo = match.groups()
@@ -252,6 +283,25 @@ class AnonymizationSystem:
         except Exception as e:
             logger.warning(f"Erro na anonimização: {e}")
             return "https://github.com/usuario_anonimo/projeto_anonimo"
+    
+    def anonymize_content(self, content: str, anonymous: bool = True) -> str:
+        """Anonimiza conteúdo textual se necessário"""
+        if not anonymous:
+            return content
+        
+        try:
+            # Anonimizar caminhos de arquivo
+            content = re.sub(r'/home/[^/]+/', '/home/usuario_anonimo/', content)
+            content = re.sub(r'/Users/[^/]+/', '/Users/usuario_anonimo/', content)
+            content = re.sub(r'C:\\Users\\[^\\]+\\', 'C:\\Users\\usuario_anonimo\\', content)
+            
+            # Anonimizar nomes de usuário em caminhos
+            content = re.sub(r'[/\\]([a-zA-Z][a-zA-Z0-9_-]{2,})[/\\]', r'/usuario_anonimo/', content)
+            
+            return content
+        except Exception as e:
+            logger.warning(f"Erro na anonimização de conteúdo: {e}")
+            return content
 
 # =============================================================================
 # SISTEMA DE BUSCA GITHUB
@@ -405,6 +455,169 @@ class GitHubRepositoryFetcher:
         except Exception as e:
             logger.warning(f"Erro ao processar repositório: {e}")
             return None
+
+# =============================================================================
+# SISTEMA DE GERAÇÃO MERMAID NATIVO
+# =============================================================================
+
+class MermaidGenerator:
+    """Gerador de diagramas Mermaid usando LangGraph nativo + Playwright"""
+    
+    def __init__(self, workflow_graph=None):
+        self.workflow_graph = workflow_graph
+        self.docs_dir = Path("docs")
+        self.docs_dir.mkdir(exist_ok=True)
+        logger.info("Gerador Mermaid inicializado")
+    
+    def generate_workflow_diagram(self) -> str:
+        """Gera diagrama Mermaid do workflow LangGraph"""
+        try:
+            if not self.workflow_graph:
+                return "Workflow não disponível"
+            
+            # Usar função nativa do LangGraph
+            if MERMAID_NATIVE_AVAILABLE:
+                try:
+                    mermaid_code = self.workflow_graph.get_graph().draw_mermaid()
+                    return mermaid_code
+                except Exception as e:
+                    logger.warning(f"Erro ao usar Mermaid nativo: {e}")
+                    return self._generate_fallback_workflow()
+            else:
+                return self._generate_fallback_workflow()
+                
+        except Exception as e:
+            logger.error(f"Erro na geração do diagrama workflow: {e}")
+            return self._generate_fallback_workflow()
+    
+    def _generate_fallback_workflow(self) -> str:
+        """Gera diagrama workflow de fallback"""
+        return """
+```mermaid
+flowchart TD
+    A[Início] --> B[Clone/Local Directory]
+    B --> C[Analyze Structure]
+    C --> D[Generate Plan]
+    D --> E[Generate C4 Context]
+    E --> F[Generate C4 Container]
+    F --> G[Generate C4 Component]
+    G --> H[Generate C4 Code]
+    H --> I[Generate Detailed Analysis]
+    I --> J[Generate Structure Report]
+    J --> K[Generate Implementation Guide]
+    K --> L[Generate Flowcharts]
+    L --> M[Concluído]
+    
+    style A fill:#e1f5fe
+    style M fill:#c8e6c9
+    style E fill:#f3e5f5
+    style F fill:#f3e5f5
+    style G fill:#f3e5f5
+    style H fill:#f3e5f5
+    style I fill:#e8f5e8
+    style J fill:#e8f5e8
+    style K fill:#e8f5e8
+    style L fill:#e8f5e8
+```
+"""
+    
+    def save_workflow_diagram(self, filename: str = "skyone_workflow_diagram.md") -> str:
+        """Salva diagrama do workflow em arquivo"""
+        try:
+            mermaid_content = f"""# Skyone DocAgent - Workflow Diagram
+
+## 🔄 Fluxo de Processamento LangGraph
+
+Este diagrama mostra o fluxo completo de processamento do Skyone DocAgent.
+
+{self.generate_workflow_diagram()}
+
+## 📋 Descrição das Etapas
+
+### Fase 1: Preparação
+- **Clone/Local Directory**: Preparação do repositório ou diretório local
+- **Analyze Structure**: Análise da estrutura de arquivos e código
+
+### Fase 2: Planejamento
+- **Generate Plan**: Criação do plano de documentação
+
+### Fase 3: Documentação C4
+- **Generate C4 Context**: Diagrama de contexto
+- **Generate C4 Container**: Diagrama de contêineres
+- **Generate C4 Component**: Diagrama de componentes
+- **Generate C4 Code**: Análise de código C4
+
+### Fase 4: Análise Detalhada
+- **Generate Detailed Analysis**: Análise técnica profunda
+- **Generate Structure Report**: Relatório estrutural
+- **Generate Implementation Guide**: Guia de implementação
+- **Generate Flowcharts**: Fluxogramas detalhados
+
+---
+*Gerado pelo Skyone DocAgent v3.0 • LangGraph Native*
+"""
+            
+            file_path = self.docs_dir / filename
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(mermaid_content)
+            
+            logger.info(f"Diagrama workflow salvo: {filename}")
+            return filename
+            
+        except Exception as e:
+            logger.error(f"Erro ao salvar diagrama workflow: {e}")
+            return ""
+    
+    def generate_mermaid_png(self, mermaid_code: str, filename: str = None) -> str:
+        """Gera PNG do diagrama Mermaid usando Playwright"""
+        try:
+            if not PLAYWRIGHT_AVAILABLE:
+                logger.warning("Playwright não disponível para geração PNG")
+                return ""
+            
+            if not filename:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"skyone_mermaid_{timestamp}.png"
+            
+            png_path = self.docs_dir / filename
+            
+            # HTML template para renderizar Mermaid
+            html_content = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {{ margin: 0; padding: 20px; background: white; }}
+        .mermaid {{ text-align: center; }}
+    </style>
+</head>
+<body>
+    <div class="mermaid">
+{mermaid_code}
+    </div>
+    <script>
+        mermaid.initialize({{ startOnLoad: true, theme: 'default' }});
+    </script>
+</body>
+</html>
+"""
+            
+            # Gerar PNG com Playwright
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                page.set_content(html_content)
+                page.wait_for_timeout(2000)  # Aguardar renderização
+                page.screenshot(path=str(png_path), full_page=True)
+                browser.close()
+            
+            logger.info(f"PNG Mermaid gerado: {filename}")
+            return filename
+            
+        except Exception as e:
+            logger.error(f"Erro ao gerar PNG Mermaid: {e}")
+            return ""
 
 # =============================================================================
 # SISTEMA DE TOOLS PARA ANÁLISE DE REPOSITÓRIO
@@ -730,17 +943,19 @@ class RepositoryAnalysisTools:
 # TOOLS LANGGRAPH PARA ANÁLISE
 # =============================================================================
 
-@tool
-def analyze_repository_structure(repo_path: str) -> str:
-    """Analisa a estrutura completa do repositório"""
-    try:
-        tools = RepositoryAnalysisTools(repo_path)
-        structure = tools.get_file_structure()
-        
-        if "error" in structure:
-            return f"Erro na análise: {structure['error']}"
-        
-        result = f"""## 📁 Estrutura do Repositório
+# Definir tools apenas se LangGraph estiver disponível
+if LANGGRAPH_AVAILABLE:
+    @tool
+    def analyze_repository_structure(repo_path: str) -> str:
+        """Analisa a estrutura completa do repositório"""
+        try:
+            tools = RepositoryAnalysisTools(repo_path)
+            structure = tools.get_file_structure()
+            
+            if "error" in structure:
+                return f"Erro na análise: {structure['error']}"
+            
+            result = f"""## 📁 Estrutura do Repositório
 
 ### 📊 Estatísticas Gerais:
 - **Total de arquivos:** {structure['total_files']:,}
@@ -749,79 +964,79 @@ def analyze_repository_structure(repo_path: str) -> str:
 
 ### 💻 Distribuição por Linguagem:
 """
-        for lang, count in sorted(structure['languages'].items(), key=lambda x: x[1], reverse=True):
-            percentage = (count / structure['code_files']) * 100 if structure['code_files'] > 0 else 0
-            result += f"- **{lang}:** {count} arquivos ({percentage:.1f}%)\n"
-        
-        result += "\n### 📁 Diretórios Importantes:\n"
-        for directory in structure['directories'][:10]:
-            result += f"- {directory}\n"
-        
-        result += "\n### 🎯 Arquivos Importantes:\n"
-        for file in structure['important_files'][:15]:
-            result += f"- {file}\n"
-        
-        return result
-        
-    except Exception as e:
-        return f"Erro na análise de estrutura: {str(e)}"
+            for lang, count in sorted(structure['languages'].items(), key=lambda x: x[1], reverse=True):
+                percentage = (count / structure['code_files']) * 100 if structure['code_files'] > 0 else 0
+                result += f"- **{lang}:** {count} arquivos ({percentage:.1f}%)\n"
+            
+            result += "\n### 📁 Diretórios Importantes:\n"
+            for directory in structure['directories'][:10]:
+                result += f"- {directory}\n"
+            
+            result += "\n### 🎯 Arquivos Importantes:\n"
+            for file in structure['important_files'][:15]:
+                result += f"- {file}\n"
+            
+            return result
+            
+        except Exception as e:
+            return f"Erro na análise de estrutura: {str(e)}"
 
-@tool
-def analyze_code_files(repo_path: str, max_files: int = 20) -> str:
-    """Analisa arquivos de código em detalhes"""
-    try:
-        tools = RepositoryAnalysisTools(repo_path)
-        analyses = tools.analyze_code_files(max_files)
-        
-        if not analyses:
-            return "Nenhum arquivo de código encontrado para análise"
-        
-        result = f"## 🔬 Análise Detalhada de Arquivos ({len(analyses)} arquivos)\n\n"
-        
-        for i, analysis in enumerate(analyses[:15], 1):
-            result += f"### {i}. {analysis.name} ({analysis.language})\n"
-            result += f"**Localização:** `{analysis.path}`\n"
-            result += f"**Tamanho:** {analysis.size:,} bytes | **Linhas:** {analysis.lines:,} | **Complexidade:** {analysis.complexity}\n"
-            result += f"**Propósito:** {analysis.purpose}\n"
-            result += f"**Resumo:** {analysis.summary}\n"
+    @tool
+    def analyze_code_files(repo_path: str, max_files: int = 20) -> str:
+        """Analisa arquivos de código em detalhes"""
+        try:
+            tools = RepositoryAnalysisTools(repo_path)
+            analyses = tools.analyze_code_files(max_files)
             
-            if analysis.functions:
-                result += f"**Funções:** {', '.join(analysis.functions[:5])}"
-                if len(analysis.functions) > 5:
-                    result += f" e mais {len(analysis.functions) - 5}"
-                result += "\n"
+            if not analyses:
+                return "Nenhum arquivo de código encontrado para análise"
             
-            if analysis.classes:
-                result += f"**Classes:** {', '.join(analysis.classes[:3])}"
-                if len(analysis.classes) > 3:
-                    result += f" e mais {len(analysis.classes) - 3}"
-                result += "\n"
+            result = f"## 🔬 Análise Detalhada de Arquivos ({len(analyses)} arquivos)\n\n"
             
-            if analysis.imports:
-                result += f"**Principais imports:** {', '.join(analysis.imports[:5])}\n"
+            for i, analysis in enumerate(analyses[:15], 1):
+                result += f"### {i}. {analysis.name} ({analysis.language})\n"
+                result += f"**Localização:** `{analysis.path}`\n"
+                result += f"**Tamanho:** {analysis.size:,} bytes | **Linhas:** {analysis.lines:,} | **Complexidade:** {analysis.complexity}\n"
+                result += f"**Propósito:** {analysis.purpose}\n"
+                result += f"**Resumo:** {analysis.summary}\n"
+                
+                if analysis.functions:
+                    result += f"**Funções:** {', '.join(analysis.functions[:5])}"
+                    if len(analysis.functions) > 5:
+                        result += f" e mais {len(analysis.functions) - 5}"
+                    result += "\n"
+                
+                if analysis.classes:
+                    result += f"**Classes:** {', '.join(analysis.classes[:3])}"
+                    if len(analysis.classes) > 3:
+                        result += f" e mais {len(analysis.classes) - 3}"
+                    result += "\n"
+                
+                if analysis.imports:
+                    result += f"**Principais imports:** {', '.join(analysis.imports[:5])}\n"
+                
+                result += "\n---\n\n"
             
-            result += "\n---\n\n"
-        
-        return result
-        
-    except Exception as e:
-        return f"Erro na análise de arquivos: {str(e)}"
+            return result
+            
+        except Exception as e:
+            return f"Erro na análise de arquivos: {str(e)}"
 
-@tool
-def read_file_content(repo_path: str, file_path: str) -> str:
-    """Lê conteúdo de um arquivo específico"""
-    try:
-        full_path = Path(repo_path) / file_path
-        
-        if not full_path.exists():
-            return f"Arquivo não encontrado: {file_path}"
-        
-        if full_path.stat().st_size > 100 * 1024:  # 100KB limit
-            return f"Arquivo muito grande: {file_path}"
-        
-        content = full_path.read_text(encoding='utf-8', errors='ignore')
-        
-        return f"""## 📄 Arquivo: {file_path}
+    @tool
+    def read_file_content(repo_path: str, file_path: str) -> str:
+        """Lê conteúdo de um arquivo específico"""
+        try:
+            full_path = Path(repo_path) / file_path
+            
+            if not full_path.exists():
+                return f"Arquivo não encontrado: {file_path}"
+            
+            if full_path.stat().st_size > 100 * 1024:  # 100KB limit
+                return f"Arquivo muito grande: {file_path}"
+            
+            content = full_path.read_text(encoding='utf-8', errors='ignore')
+            
+            return f"""## 📄 Arquivo: {file_path}
 
 **Tamanho:** {full_path.stat().st_size:,} bytes
 **Linhas:** {len(content.split(chr(10)))}
@@ -831,76 +1046,90 @@ def read_file_content(repo_path: str, file_path: str) -> str:
 {content[:2000]}{'...' if len(content) > 2000 else ''}
 ```
 """
-        
-    except Exception as e:
-        return f"Erro ao ler arquivo {file_path}: {str(e)}"
+            
+        except Exception as e:
+            return f"Erro ao ler arquivo {file_path}: {str(e)}"
 
-@tool
-def find_dependencies(repo_path: str) -> str:
-    """Encontra e analisa arquivos de dependências"""
-    try:
-        dependency_files = {
-            'package.json': 'Node.js',
-            'requirements.txt': 'Python',
-            'Pipfile': 'Python (Pipenv)',
-            'pyproject.toml': 'Python (Poetry)',
-            'pom.xml': 'Java (Maven)',
-            'build.gradle': 'Java (Gradle)',
-            'Cargo.toml': 'Rust',
-            'go.mod': 'Go',
-            'composer.json': 'PHP'
-        }
-        
-        found_deps = []
-        repo_path = Path(repo_path)
-        
-        for dep_file, tech in dependency_files.items():
-            file_path = repo_path / dep_file
-            if file_path.exists():
-                try:
-                    content = file_path.read_text(encoding='utf-8', errors='ignore')
-                    size = file_path.stat().st_size
-                    
-                    found_deps.append({
-                        'file': dep_file,
-                        'technology': tech,
-                        'size': size,
-                        'content_preview': content[:500]
-                    })
-                except Exception as e:
-                    logger.warning(f"Erro ao ler {dep_file}: {e}")
-        
-        if not found_deps:
-            return "Nenhum arquivo de dependências encontrado"
-        
-        result = "## 📦 Arquivos de Dependências Encontrados\n\n"
-        
-        for dep in found_deps:
-            result += f"### {dep['file']} ({dep['technology']})\n"
-            result += f"**Tamanho:** {dep['size']:,} bytes\n\n"
+    @tool
+    def find_dependencies(repo_path: str) -> str:
+        """Encontra e analisa arquivos de dependências"""
+        try:
+            dependency_files = {
+                'package.json': 'Node.js',
+                'requirements.txt': 'Python',
+                'Pipfile': 'Python (Pipenv)',
+                'pyproject.toml': 'Python (Poetry)',
+                'pom.xml': 'Java (Maven)',
+                'build.gradle': 'Java (Gradle)',
+                'Cargo.toml': 'Rust',
+                'go.mod': 'Go',
+                'composer.json': 'PHP'
+            }
             
-            if dep['file'] == 'package.json':
-                try:
-                    pkg_data = json.loads(dep['content_preview'])
-                    if 'dependencies' in pkg_data:
-                        result += "**Dependências principais:**\n"
-                        for pkg, version in list(pkg_data['dependencies'].items())[:10]:
-                            result += f"- {pkg}: {version}\n"
-                except:
-                    pass
-            elif dep['file'] == 'requirements.txt':
-                lines = dep['content_preview'].split('\n')[:15]
-                result += "**Dependências:**\n"
-                for line in lines:
-                    if line.strip() and not line.startswith('#'):
-                        result += f"- {line.strip()}\n"
+            found_deps = []
+            repo_path = Path(repo_path)
             
-            result += "\n---\n\n"
-        
-        return result
-        
-    except Exception as e:
-        return f"Erro na análise de dependências: {str(e)}"
+            for dep_file, tech in dependency_files.items():
+                file_path = repo_path / dep_file
+                if file_path.exists():
+                    try:
+                        content = file_path.read_text(encoding='utf-8', errors='ignore')
+                        size = file_path.stat().st_size
+                        
+                        found_deps.append({
+                            'file': dep_file,
+                            'technology': tech,
+                            'size': size,
+                            'content_preview': content[:500]
+                        })
+                    except Exception as e:
+                        logger.warning(f"Erro ao ler {dep_file}: {e}")
+            
+            if not found_deps:
+                return "Nenhum arquivo de dependências encontrado"
+            
+            result = "## 📦 Arquivos de Dependências Encontrados\n\n"
+            
+            for dep in found_deps:
+                result += f"### {dep['file']} ({dep['technology']})\n"
+                result += f"**Tamanho:** {dep['size']:,} bytes\n\n"
+                
+                if dep['file'] == 'package.json':
+                    try:
+                        pkg_data = json.loads(dep['content_preview'])
+                        if 'dependencies' in pkg_data:
+                            result += "**Dependências principais:**\n"
+                            for pkg, version in list(pkg_data['dependencies'].items())[:10]:
+                                result += f"- {pkg}: {version}\n"
+                    except:
+                        pass
+                elif dep['file'] == 'requirements.txt':
+                    lines = dep['content_preview'].split('\n')[:15]
+                    result += "**Dependências:**\n"
+                    for line in lines:
+                        if line.strip() and not line.startswith('#'):
+                            result += f"- {line.strip()}\n"
+                
+                result += "\n---\n\n"
+            
+            return result
+            
+        except Exception as e:
+            return f"Erro na análise de dependências: {str(e)}"
+
+else:
+    # Definir tools vazias se LangGraph não estiver disponível
+    def analyze_repository_structure(repo_path: str) -> str:
+        return "LangGraph não disponível"
+    
+    def analyze_code_files(repo_path: str, max_files: int = 20) -> str:
+        return "LangGraph não disponível"
+    
+    def read_file_content(repo_path: str, file_path: str) -> str:
+        return "LangGraph não disponível"
+    
+    def find_dependencies(repo_path: str) -> str:
+        return "LangGraph não disponível"
 
 # =============================================================================
 # SISTEMA DE MODELOS LLM
@@ -1144,15 +1373,30 @@ ANÁLISE DO REPOSITÓRIO:
 
 {dependencies}
 
+<<<<<<< HEAD
+Crie um plano JSON com 8 seções seguindo o modelo C4 + Análise Detalhada:
+=======
 Crie um plano JSON com exatamente 4 seções seguindo o modelo C4:
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 1. "C4 Context Diagram" - visão geral do sistema e interações externas
 2. "C4 Container Diagram" - contêineres e tecnologias principais
 3. "C4 Component Diagram" - componentes internos e suas responsabilidades
 4. "C4 Code Analysis" - análise detalhada do código e estrutura
+<<<<<<< HEAD
+5. "Detailed Code Analysis" - análise técnica profunda linha por linha
+6. "Code Structure Report" - relatório estrutural detalhado
+7. "Technical Implementation Guide" - guia técnico de implementação
+8. "Mermaid Flowcharts" - fluxogramas detalhados dos componentes
+
+Formato JSON obrigatório:
+{{
+  "overview": "Documentação completa C4 + Análise Detalhada do projeto Skyone",
+=======
 
 Formato JSON obrigatório:
 {{
   "overview": "Documentação arquitetural C4 do projeto Skyone",
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
   "sections": [
     {{
       "title": "C4 Context Diagram",
@@ -1173,6 +1417,29 @@ Formato JSON obrigatório:
       "title": "C4 Code Analysis",
       "description": "Análise detalhada do código, classes e implementação",
       "content_type": "c4_code"
+<<<<<<< HEAD
+    }},
+    {{
+      "title": "Detailed Code Analysis",
+      "description": "Análise técnica profunda linha por linha do código",
+      "content_type": "detailed_code_analysis"
+    }},
+    {{
+      "title": "Code Structure Report",
+      "description": "Relatório estrutural detalhado dos arquivos e módulos",
+      "content_type": "code_structure_report"
+    }},
+    {{
+      "title": "Technical Implementation Guide",
+      "description": "Guia técnico de implementação e padrões utilizados",
+      "content_type": "technical_implementation"
+    }},
+    {{
+      "title": "Mermaid Flowcharts",
+      "description": "Fluxogramas detalhados dos componentes e processos",
+      "content_type": "mermaid_flowcharts"
+=======
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
     }}
   ]
 }}
@@ -1207,14 +1474,26 @@ Responda APENAS com o JSON válido.
                     
             except Exception as e:
                 logger.warning(f"Erro ao extrair plano JSON: {e}")
+<<<<<<< HEAD
+                # Plano padrão C4 com análise detalhada de código
+                state["documentation_plan"] = {
+                    "overview": "Documentação completa C4 + Análise Detalhada do projeto Skyone",
+=======
                 # Plano padrão C4 com fluxogramas
                 state["documentation_plan"] = {
                     "overview": "Documentação arquitetural C4 do projeto Skyone",
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
                     "sections": [
                         {"title": "C4 Context Diagram", "description": "Visão contextual do sistema", "content_type": "c4_context"},
                         {"title": "C4 Container Diagram", "description": "Contêineres e tecnologias", "content_type": "c4_container"},
                         {"title": "C4 Component Diagram", "description": "Componentes internos", "content_type": "c4_component"},
                         {"title": "C4 Code Analysis", "description": "Análise detalhada do código", "content_type": "c4_code"},
+<<<<<<< HEAD
+                        {"title": "Detailed Code Analysis", "description": "Análise técnica profunda do código", "content_type": "detailed_code_analysis"},
+                        {"title": "Code Structure Report", "description": "Relatório estrutural detalhado", "content_type": "code_structure_report"},
+                        {"title": "Technical Implementation Guide", "description": "Guia técnico de implementação", "content_type": "technical_implementation"},
+=======
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
                         {"title": "Mermaid Flowcharts", "description": "Fluxogramas detalhados dos componentes", "content_type": "mermaid_flowcharts"}
                     ]
                 }
@@ -1273,6 +1552,17 @@ Responda APENAS com o JSON válido.
                     logger.error(f"Erro na seção {section['title']}: {e}")
                     state["logs"].append(f"❌ Erro na seção {section['title']}: {str(e)}")
             
+            # Gerar diagrama de workflow usando LangGraph nativo
+            try:
+                # Criar gerador Mermaid para esta instância
+                temp_generator = MermaidGenerator()
+                workflow_file = temp_generator.save_workflow_diagram()
+                if workflow_file:
+                    generated_files.append(workflow_file)
+                    state["logs"].append("✅ Diagrama de workflow LangGraph criado")
+            except Exception as e:
+                logger.warning(f"Erro ao gerar diagrama de workflow: {e}")
+            
             state["generated_docs"] = generated_files
             state["current_phase"] = "completed"
             state["progress"] = 100
@@ -1291,6 +1581,22 @@ Responda APENAS com o JSON válido.
         pattern = r"^https://github\.com/[\w\-\.]+/[\w\-\.]+/?$"
         return bool(re.match(pattern, url.strip()))
     
+    def _limit_context_size(self, structure_info: Dict[str, Any], max_chars: int = 8000) -> Dict[str, Any]:
+        """Limita o tamanho do contexto para evitar 'Chunk too big'"""
+        limited_info = {}
+        
+        for key, value in structure_info.items():
+            if isinstance(value, str):
+                if len(value) > max_chars:
+                    # Truncar mantendo informações importantes
+                    limited_info[key] = value[:max_chars] + "\n\n[... Análise truncada para evitar limite de tokens ...]"
+                else:
+                    limited_info[key] = value
+            else:
+                limited_info[key] = value
+        
+        return limited_info
+    
     async def _generate_section_content(self, llm, section: Dict, state: DocumentationState, section_num: int) -> str:
         """Gera conteúdo de uma seção específica"""
         try:
@@ -1301,6 +1607,28 @@ Responda APENAS com o JSON válido.
             # Anonimizar URL se necessário
             final_url = self.anonymizer.anonymize_repo_url(repo_url) if anonymous else repo_url
             
+<<<<<<< HEAD
+            # Limitar tamanho do contexto para evitar "Chunk too big"
+            structure_info = state.get("file_structure", {})
+            limited_structure_info = self._limit_context_size(structure_info)
+            
+            if content_type == "c4_context":
+                prompt = self._create_c4_context_prompt(section, limited_structure_info, final_url)
+            elif content_type == "c4_container":
+                prompt = self._create_c4_container_prompt(section, limited_structure_info, final_url)
+            elif content_type == "c4_component":
+                prompt = self._create_c4_component_prompt(section, limited_structure_info, final_url)
+            elif content_type == "c4_code":
+                prompt = self._create_c4_code_prompt(section, limited_structure_info, final_url)
+            elif content_type == "mermaid_flowcharts":
+                prompt = self._create_mermaid_flowcharts_prompt(section, limited_structure_info, final_url)
+            elif content_type == "detailed_code_analysis":
+                prompt = self._create_detailed_code_analysis_prompt(section, limited_structure_info, final_url)
+            elif content_type == "code_structure_report":
+                prompt = self._create_code_structure_report_prompt(section, limited_structure_info, final_url)
+            elif content_type == "technical_implementation":
+                prompt = self._create_technical_implementation_prompt(section, limited_structure_info, final_url)
+=======
             if content_type == "c4_context":
                 prompt = self._create_c4_context_prompt(section, state, final_url)
             elif content_type == "c4_container":
@@ -1311,6 +1639,7 @@ Responda APENAS com o JSON válido.
                 prompt = self._create_c4_code_prompt(section, state, final_url)
             elif content_type == "mermaid_flowcharts":
                 prompt = self._create_mermaid_flowcharts_prompt(section, state, final_url)
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
             elif content_type == "overview":
                 prompt = self._create_overview_prompt(section, state, final_url)
             elif content_type == "installation":
@@ -1324,9 +1653,15 @@ Responda APENAS com o JSON válido.
             result = await llm.ainvoke([HumanMessage(content=prompt)])
             
             if hasattr(result, 'content'):
-                return result.content
+                content = result.content
             else:
-                return str(result)
+                content = str(result)
+            
+            # Aplicar anonimização no conteúdo se necessário
+            anonymous = state.get("anonymous", True)
+            content = self.anonymizer.anonymize_content(content, anonymous)
+            
+            return content
                 
         except Exception as e:
             logger.error(f"Erro ao gerar seção {section.get('title', 'unknown')}: {e}")
@@ -1438,9 +1773,14 @@ Crie documentação técnica em Markdown com:
 Use APENAS dados da análise real dos arquivos.
 """
     
+<<<<<<< HEAD
+    def _create_c4_context_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
+        """Cria prompt para C4 Context Diagram"""
+=======
     def _create_c4_context_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
         """Cria prompt para C4 Context Diagram"""
         structure_info = state.get("file_structure", {})
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Crie uma documentação C4 CONTEXT DIAGRAM baseada na análise real:
@@ -1492,9 +1832,14 @@ C4Context
 Use APENAS informações da análise real fornecida.
 """
 
+<<<<<<< HEAD
+    def _create_c4_container_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
+        """Cria prompt para C4 Container Diagram"""
+=======
     def _create_c4_container_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
         """Cria prompt para C4 Container Diagram"""
         structure_info = state.get("file_structure", {})
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Você é um especialista em arquitetura C4. Crie uma documentação C4 CONTAINER DIAGRAM baseada EXCLUSIVAMENTE na análise real:
@@ -1571,9 +1916,14 @@ C4Container
 IMPORTANTE: Use SOMENTE dados REAIS da análise. NÃO invente contêineres, bancos de dados ou APIs.
 """
 
+<<<<<<< HEAD
+    def _create_c4_component_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
+        """Cria prompt para C4 Component Diagram"""
+=======
     def _create_c4_component_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
         """Cria prompt para C4 Component Diagram"""
         structure_info = state.get("file_structure", {})
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Você é um especialista em arquitetura de software e documentação C4. Crie uma documentação C4 COMPONENT DIAGRAM baseada EXCLUSIVAMENTE na análise detalhada real fornecida.
@@ -1648,9 +1998,14 @@ C4Component
 IMPORTANTE: Use SOMENTE informações REAIS da análise fornecida. NÃO invente componentes genéricos.
 """
 
+<<<<<<< HEAD
+    def _create_c4_code_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
+        """Cria prompt para C4 Code Analysis"""
+=======
     def _create_c4_code_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
         """Cria prompt para C4 Code Analysis"""
         structure_info = state.get("file_structure", {})
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Crie uma documentação C4 CODE ANALYSIS baseada na análise detalhada do código:
@@ -1710,9 +2065,14 @@ classDiagram
 Use APENAS dados reais da análise dos arquivos fornecida.
 """
 
+<<<<<<< HEAD
+    def _create_mermaid_flowcharts_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
+        """Cria prompt para fluxogramas Mermaid detalhados"""
+=======
     def _create_mermaid_flowcharts_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
         """Cria prompt para fluxogramas Mermaid detalhados"""
         structure_info = state.get("file_structure", {})
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         
         return f"""
 Você é um especialista em fluxogramas e diagramas Mermaid. Crie fluxogramas detalhados baseados EXCLUSIVAMENTE na análise real do código.
@@ -1744,6 +2104,19 @@ INSTRUÇÕES CRÍTICAS:
 
 ```mermaid
 flowchart TD
+<<<<<<< HEAD
+    Start([Inicio do Sistema]) --> Init[Inicializacao]
+    Init --> Config[Carregar Configuracao]
+    Config --> Main[Funcao Principal]
+    Main --> Process[Processar Dados]
+    Process --> Output[Gerar Saida]
+    Output --> End([Fim])
+    
+    style Start fill:#e1f5fe
+    style End fill:#c8e6c9
+    style Main fill:#f3e5f5
+    style Process fill:#fff3e0
+=======
     [Para cada função/processo REAL identificado, crie um nó]
     [Exemplo: A[FuncaoRealPrincipal] --> B[FuncaoRealSecundaria]]
     [Use nomes REAIS das funções da análise]
@@ -1753,6 +2126,7 @@ flowchart TD
     
     style A fill:#e1f5fe
     style B fill:#f3e5f5
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ### Fluxograma de Processamento de Dados
@@ -1760,6 +2134,18 @@ flowchart TD
 
 ```mermaid
 flowchart LR
+<<<<<<< HEAD
+    Input[Entrada de Dados] --> Validate[Validar Dados]
+    Validate --> Transform[Transformar]
+    Transform --> Store[Armazenar]
+    Store --> Output[Saída]
+    
+    %% Substitua pelos processos REAIS identificados na análise
+    %% Use nomes REAIS das funções que manipulam dados
+    
+    style Input fill:#e3f2fd
+    style Output fill:#e8f5e8
+=======
     [Baseado nos fluxos REAIS de dados identificados]
     [Use funções REAIS que manipulam dados]
     
@@ -1767,6 +2153,7 @@ flowchart LR
         [FuncaoRealEntrada] --> [FuncaoRealProcessamento]
         [FuncaoRealProcessamento] --> [FuncaoRealSaida]
     end
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ### Fluxograma de Interação entre Módulos
@@ -1774,6 +2161,24 @@ flowchart LR
 
 ```mermaid
 flowchart TB
+<<<<<<< HEAD
+    subgraph "Módulo Principal"
+        MainFunc[Função Principal]
+        Helper[Função Auxiliar]
+    end
+    
+    subgraph "Módulo Secundário"
+        SecFunc[Função Secundária]
+        Utils[Utilitários]
+    end
+    
+    %% Conecte baseado nos imports REAIS da análise
+    MainFunc --> SecFunc
+    Helper --> Utils
+    
+    style MainFunc fill:#f3e5f5
+    style SecFunc fill:#e8f5e8
+=======
     [Para cada arquivo/módulo REAL:]
     
     subgraph "[NomeModuloReal1]"
@@ -1789,6 +2194,7 @@ flowchart TB
     [Conecte baseado nos imports REAIS]
     [FuncaoReal1] --> [FuncaoReal3]
     [FuncaoReal2] --> [FuncaoReal4]
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ### Fluxograma de Tratamento de Erros
@@ -1796,7 +2202,21 @@ flowchart TB
 
 ```mermaid
 flowchart TD
+<<<<<<< HEAD
+    Try[Executar Operacao] --> Success{{Sucesso}}
+    Success -->|Sim| Continue[Continuar]
+    Success -->|Nao| Catch[Capturar Erro]
+    Catch --> Log[Registrar Erro]
+    Log --> Fallback[Acao de Fallback]
+    Fallback --> End[Fim]
+    Continue --> End
+    
+    style Try fill:#e3f2fd
+    style Catch fill:#ffebee
+    style End fill:#e8f5e8
+=======
     [Baseado em try/catch ou tratamento de erro REAL encontrado]
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ### Fluxograma de Configuração e Inicialização
@@ -1804,8 +2224,20 @@ flowchart TD
 
 ```mermaid
 flowchart TD
+<<<<<<< HEAD
+    Start([Inicio]) --> LoadEnv[Carregar Variaveis de Ambiente]
+    LoadEnv --> ReadConfig[Ler Arquivos de Configuracao]
+    ReadConfig --> Validate[Validar Configuracoes]
+    Validate --> Setup[Configurar Sistema]
+    Setup --> Ready[Sistema Pronto]
+    
+    style Start fill:#e1f5fe
+    style Ready fill:#c8e6c9
+    style Setup fill:#f3e5f5
+=======
     [Baseado nos arquivos de configuração REAIS encontrados]
     [Use funções REAIS de inicialização identificadas]
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
 ```
 
 ## 📋 Descrição dos Fluxogramas
@@ -1829,6 +2261,426 @@ flowchart TD
 IMPORTANTE: Crie APENAS fluxogramas baseados em código REAL analisado. NÃO invente processos genéricos.
 """
 
+<<<<<<< HEAD
+    def _create_detailed_code_analysis_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
+        """Cria prompt para análise detalhada linha por linha do código"""
+        
+        return f"""
+Você é um especialista em análise de código e engenharia de software. Crie uma ANÁLISE TÉCNICA PROFUNDA linha por linha baseada EXCLUSIVAMENTE na análise real do código.
+
+TÍTULO: {section['title']}
+
+ANÁLISE COMPLETA DOS ARQUIVOS:
+{structure_info.get('code_analysis', 'Análise de código não disponível')}
+
+ESTRUTURA DETALHADA:
+{structure_info.get('structure_analysis', 'Estrutura não analisada')}
+
+DEPENDÊNCIAS IDENTIFICADAS:
+{structure_info.get('dependencies', 'Dependências não identificadas')}
+
+INSTRUÇÕES CRÍTICAS:
+1. Analise CADA arquivo identificado na análise com detalhes técnicos profundos
+2. Examine imports, dependências, padrões de código e estruturas de dados REAIS
+3. Identifique vulnerabilidades, otimizações e melhorias possíveis
+4. Use APENAS dados da análise fornecida - NÃO invente código ou estruturas
+5. Foque em aspectos técnicos: performance, segurança, manutenibilidade
+
+# {section['title']}
+
+## 🔬 Análise Técnica Profunda por Arquivo
+
+### Metodologia de Análise
+- **Escopo:** Análise linha por linha dos arquivos principais
+- **Critérios:** Performance, Segurança, Manutenibilidade, Padrões
+- **Ferramentas:** Análise estática baseada na estrutura identificada
+
+### Arquivos Analisados em Detalhes
+
+[Para cada arquivo REAL da análise:]
+
+#### [Nome Real do Arquivo] - Análise Técnica
+
+**📍 Localização:** `[Caminho REAL do arquivo]`
+**🔤 Linguagem:** [Linguagem REAL detectada]
+**📏 Métricas:** [Linhas, tamanho, complexidade REAIS]
+
+##### Estrutura do Código
+- **Imports/Dependências:**
+  [Liste os imports REAIS identificados na análise]
+  - Análise de cada import: propósito, versão, segurança
+  
+- **Classes Identificadas:**
+  [Para cada classe REAL encontrada:]
+  - `[NomeClasseReal]`: [Propósito baseado na análise]
+    - Métodos: [Métodos REAIS identificados]
+    - Atributos: [Baseados na análise do código]
+    - Padrões aplicados: [Padrões REAIS identificados]
+
+- **Funções Principais:**
+  [Para cada função REAL encontrada:]
+  - `[NomeFuncaoReal]()`: [Propósito baseado na análise]
+    - Parâmetros: [Baseados na análise]
+    - Lógica: [Resumo da lógica identificada]
+    - Complexidade: [Complexidade REAL calculada]
+
+##### Análise de Qualidade
+- **Performance:**
+  - Pontos de otimização identificados
+  - Estruturas de dados utilizadas
+  - Algoritmos e complexidade
+  
+- **Segurança:**
+  - Validação de inputs
+  - Tratamento de erros
+  - Exposição de dados sensíveis
+  
+- **Manutenibilidade:**
+  - Legibilidade do código
+  - Documentação interna
+  - Padrões de nomenclatura
+
+##### Padrões e Arquitetura
+- **Padrões de Design:** [Padrões REAIS identificados]
+- **Arquitetura:** [Estrutura arquitetural identificada]
+- **Acoplamento:** [Análise de dependências REAIS]
+- **Coesão:** [Análise da organização do código]
+
+##### Recomendações Técnicas
+- **Melhorias de Performance:** [Baseadas na análise real]
+- **Refatorações Sugeridas:** [Baseadas no código analisado]
+- **Correções de Segurança:** [Se identificadas vulnerabilidades]
+- **Otimizações:** [Específicas para o código analisado]
+
+---
+
+## 📊 Resumo da Análise Técnica
+
+### Métricas Gerais
+[Baseadas na análise real:]
+- **Total de Arquivos Analisados:** [Número REAL]
+- **Linhas de Código:** [Total REAL]
+- **Complexidade Média:** [Calculada na análise]
+- **Linguagens Principais:** [Identificadas na análise]
+
+### Pontos Críticos Identificados
+[APENAS se identificados na análise real:]
+1. **Performance:** [Problemas específicos encontrados]
+2. **Segurança:** [Vulnerabilidades específicas]
+3. **Manutenibilidade:** [Problemas de código específicos]
+
+### Padrões Arquiteturais Detectados
+[Baseados na estrutura REAL do código:]
+- [Padrão1]: [Onde foi identificado]
+- [Padrão2]: [Como está implementado]
+
+### Tecnologias e Frameworks
+[APENAS os identificados nas dependências:]
+- [Framework1]: [Versão e uso identificado]
+- [Biblioteca1]: [Propósito no projeto]
+
+IMPORTANTE: Use SOMENTE informações REAIS da análise fornecida. Seja específico e técnico.
+"""
+
+    def _create_code_structure_report_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
+        """Cria prompt para relatório estrutural detalhado"""
+        
+        return f"""
+Você é um arquiteto de software especialista. Crie um RELATÓRIO ESTRUTURAL DETALHADO baseado EXCLUSIVAMENTE na análise real da estrutura do projeto.
+
+TÍTULO: {section['title']}
+
+ANÁLISE ESTRUTURAL COMPLETA:
+{structure_info.get('structure_analysis', 'Análise estrutural não disponível')}
+
+ANÁLISE DE CÓDIGO:
+{structure_info.get('code_analysis', 'Análise de código não disponível')}
+
+DEPENDÊNCIAS:
+{structure_info.get('dependencies', 'Dependências não identificadas')}
+
+INSTRUÇÕES CRÍTICAS:
+1. Use APENAS a estrutura de diretórios e arquivos REAIS identificados
+2. Analise a organização REAL do projeto baseada na análise
+3. Identifique padrões organizacionais e convenções REAIS
+4. NÃO invente estruturas ou organize informações não presentes na análise
+
+# {section['title']}
+
+## 🏗️ Estrutura Organizacional do Projeto
+
+### Hierarquia de Diretórios
+[Baseado na estrutura REAL identificada:]
+
+```
+[Reproduza a estrutura REAL de diretórios identificada na análise]
+```
+
+### Organização por Responsabilidade
+
+#### Diretórios Principais
+[Para cada diretório REAL identificado:]
+
+**📁 [Nome do Diretório Real]**
+- **Propósito:** [Baseado nos arquivos encontrados]
+- **Arquivos:** [Arquivos REAIS encontrados]
+- **Linguagens:** [Linguagens REAIS detectadas]
+- **Responsabilidade:** [Baseada na análise dos arquivos]
+
+#### Padrões de Organização
+[Baseados na estrutura REAL:]
+- **Convenções de nomenclatura:** [Padrões REAIS identificados]
+- **Separação de responsabilidades:** [Como está organizado]
+- **Modularização:** [Estrutura modular identificada]
+
+### Análise de Arquivos por Categoria
+
+#### Arquivos de Configuração
+[APENAS os identificados na análise:]
+- `[arquivo.config]`: [Propósito baseado na análise]
+- `[requirements.txt]`: [Dependências identificadas]
+
+#### Arquivos Principais
+[APENAS os identificados como importantes na análise:]
+- `[main.py]`: [Função no projeto baseada na análise]
+- `[app.js]`: [Responsabilidade identificada]
+
+#### Arquivos de Teste
+[APENAS se identificados na análise:]
+- Localização: [Onde estão os testes]
+- Cobertura: [Baseada nos arquivos encontrados]
+
+### Dependências e Integrações
+
+#### Dependências Externas
+[APENAS as identificadas nos arquivos de dependência:]
+- **[Framework1]**: [Versão e uso identificado]
+- **[Biblioteca1]**: [Propósito no projeto]
+
+#### Dependências Internas
+[Baseadas nos imports REAIS identificados:]
+- **Módulos internos:** [Módulos REAIS que se importam]
+- **Acoplamento:** [Nível de dependência entre módulos]
+
+### Métricas Estruturais
+
+#### Distribuição de Código
+[Baseada na análise REAL:]
+- **Total de arquivos:** [Número REAL]
+- **Arquivos por linguagem:** [Distribuição REAL]
+- **Tamanho médio dos arquivos:** [Calculado da análise]
+
+#### Complexidade Estrutural
+[Baseada na análise REAL:]
+- **Profundidade de diretórios:** [Níveis REAIS]
+- **Arquivos por diretório:** [Média REAL]
+- **Interdependências:** [Baseadas nos imports]
+
+### Padrões Arquiteturais Identificados
+
+#### Padrões de Organização
+[APENAS os identificados na estrutura REAL:]
+- **[Padrão1]**: [Onde é aplicado no projeto]
+- **[Padrão2]**: [Como está implementado]
+
+#### Convenções do Projeto
+[Baseadas na análise REAL:]
+- **Nomenclatura:** [Padrões REAIS de nomes]
+- **Estrutura:** [Convenções REAIS de organização]
+- **Separação:** [Como responsabilidades estão divididas]
+
+### Recomendações Estruturais
+
+#### Pontos Fortes
+[Baseados na estrutura analisada:]
+- [Aspecto positivo específico identificado]
+- [Boa prática estrutural encontrada]
+
+#### Oportunidades de Melhoria
+[APENAS se identificadas na análise:]
+- [Problema estrutural específico]
+- [Sugestão de reorganização específica]
+
+## 📋 Resumo Executivo da Estrutura
+
+### Características Principais
+- **Tipo de projeto:** [Identificado pela estrutura]
+- **Padrão arquitetural:** [Principal padrão identificado]
+- **Nível de organização:** [Baseado na análise]
+
+### Pontos de Atenção
+[APENAS os identificados na análise real]
+
+IMPORTANTE: Use SOMENTE dados REAIS da análise estrutural fornecida.
+"""
+
+    def _create_technical_implementation_prompt(self, section: Dict, structure_info: Dict[str, Any], final_url: str) -> str:
+        """Cria prompt para guia técnico de implementação"""
+        
+        return f"""
+Você é um especialista em implementação de software. Crie um GUIA TÉCNICO DE IMPLEMENTAÇÃO baseado EXCLUSIVAMENTE na análise real do projeto.
+
+TÍTULO: {section['title']}
+
+ANÁLISE COMPLETA:
+{structure_info.get('code_analysis', 'Análise de código não disponível')}
+
+ESTRUTURA:
+{structure_info.get('structure_analysis', 'Estrutura não analisada')}
+
+DEPENDÊNCIAS:
+{structure_info.get('dependencies', 'Dependências não identificadas')}
+
+INSTRUÇÕES CRÍTICAS:
+1. Base-se APENAS nas tecnologias, padrões e implementações REAIS identificadas
+2. Documente APENAS os padrões e práticas REAIS encontradas no código
+3. Use exemplos REAIS das funções e classes identificadas na análise
+4. NÃO invente implementações ou padrões não presentes no código analisado
+
+# {section['title']}
+
+## 🛠️ Guia de Implementação Técnica
+
+### Stack Tecnológico Identificado
+[Baseado nas dependências e arquivos REAIS:]
+
+#### Tecnologias Principais
+- **Linguagem Principal:** [Linguagem REAL mais usada]
+- **Framework:** [Framework REAL identificado nas dependências]
+- **Bibliotecas:** [Bibliotecas REAIS encontradas]
+
+#### Ferramentas de Desenvolvimento
+[APENAS se identificadas nos arquivos de config:]
+- **Gerenciamento de dependências:** [Tool REAL identificado]
+- **Testes:** [Framework de teste se encontrado]
+- **Build:** [Sistema de build se identificado]
+
+### Padrões de Implementação Identificados
+
+#### Padrões de Código
+[Baseados no código REAL analisado:]
+
+**Exemplo de Implementação Real:**
+```[linguagem]
+// Baseado em função/classe REAL identificada na análise
+[Trecho de código real ou estrutura identificada]
+```
+
+#### Convenções de Nomenclatura
+[Baseadas nos nomes REAIS identificados:]
+- **Variáveis:** [Padrão REAL identificado]
+- **Funções:** [Convenção REAL encontrada]
+- **Classes:** [Padrão REAL de nomenclatura]
+
+### Arquitetura de Implementação
+
+#### Estrutura de Módulos
+[Baseada na organização REAL:]
+- **[Módulo Real 1]:** [Responsabilidade identificada]
+  - Implementação: [Como está implementado]
+  - Dependências: [Dependências REAIS]
+  
+- **[Módulo Real 2]:** [Função no sistema]
+  - Padrões aplicados: [Padrões REAIS identificados]
+  - Interfaces: [Interfaces REAIS identificadas]
+
+#### Fluxo de Dados
+[Baseado nas funções e imports REAIS:]
+1. **Entrada:** [Como dados entram no sistema - baseado na análise]
+2. **Processamento:** [Funções REAIS de processamento identificadas]
+3. **Saída:** [Como dados saem - baseado no código analisado]
+
+### Implementações Específicas
+
+#### Gerenciamento de Estado
+[APENAS se identificado no código:]
+- **Padrão utilizado:** [Padrão REAL identificado]
+- **Implementação:** [Como está implementado no código]
+
+#### Tratamento de Erros
+[Baseado no código REAL analisado:]
+- **Estratégia:** [Como erros são tratados no código]
+- **Implementação:** [Exemplos REAIS encontrados]
+
+#### Configuração
+[Baseada nos arquivos de config REAIS:]
+- **Método:** [Como configuração é gerenciada]
+- **Arquivos:** [Arquivos de config REAIS identificados]
+
+### Padrões de Qualidade Implementados
+
+#### Práticas de Código
+[Identificadas na análise REAL:]
+- **Documentação:** [Nível de documentação encontrado]
+- **Testes:** [Cobertura de testes se identificada]
+- **Validação:** [Validações implementadas no código]
+
+#### Performance
+[Baseada na análise do código:]
+- **Otimizações:** [Otimizações REAIS identificadas]
+- **Estruturas de dados:** [Estruturas REAIS utilizadas]
+
+### Guia de Extensão
+
+#### Como Adicionar Funcionalidades
+[Baseado nos padrões REAIS identificados:]
+1. **Seguir padrão:** [Padrão REAL identificado no projeto]
+2. **Estrutura:** [Como novas funcionalidades devem se integrar]
+3. **Dependências:** [Como gerenciar novas dependências]
+
+#### Pontos de Extensão Identificados
+[Baseados na arquitetura REAL:]
+- **[Ponto de extensão 1]:** [Onde e como estender]
+- **[Ponto de extensão 2]:** [Padrão para seguir]
+
+### Configuração de Ambiente
+
+#### Dependências
+[Baseadas nos arquivos REAIS de dependência:]
+```bash
+# Comandos baseados nos arquivos de dependência identificados
+[Comandos REAIS de instalação baseados nos arquivos encontrados]
+```
+
+#### Variáveis de Ambiente
+[APENAS se identificadas no código:]
+- `[VAR_REAL]`: [Propósito baseado no código]
+- `[CONFIG_REAL]`: [Uso identificado na análise]
+
+### Debugging e Troubleshooting
+
+#### Logs
+[Baseados no sistema de log identificado:]
+- **Sistema:** [Sistema de log REAL identificado]
+- **Níveis:** [Níveis de log encontrados no código]
+
+#### Monitoramento
+[APENAS se implementado no código:]
+- **Métricas:** [Métricas REAIS implementadas]
+- **Health checks:** [Se implementados no código]
+
+## 📋 Checklist de Implementação
+
+### Pré-requisitos
+[Baseados nas dependências REAIS:]
+- [ ] [Requisito 1 baseado na análise]
+- [ ] [Requisito 2 identificado]
+
+### Implementação
+[Baseada nos padrões REAIS:]
+- [ ] [Passo 1 baseado na estrutura real]
+- [ ] [Passo 2 seguindo padrões identificados]
+
+### Validação
+[Baseada nas práticas REAIS encontradas:]
+- [ ] [Validação 1 baseada no código]
+- [ ] [Teste 1 baseado na estrutura]
+
+IMPORTANTE: Use SOMENTE padrões e implementações REAIS identificadas na análise.
+"""
+
+=======
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
     def _create_general_prompt(self, section: Dict, state: DocumentationState, final_url: str) -> str:
         """Cria prompt genérico"""
         return f"""
@@ -1884,10 +2736,23 @@ detalhada do código-fonte do projeto.
             return f"02_C4_Container_Diagram{suffix}.md"
         elif "component" in title_lower:
             return f"03_C4_Component_Diagram{suffix}.md"
+<<<<<<< HEAD
+        elif "c4" in title_lower and "code" in title_lower:
+            return f"04_C4_Code_Analysis{suffix}.md"
+        elif "detailed" in title_lower and "code" in title_lower:
+            return f"05_Detailed_Code_Analysis{suffix}.md"
+        elif "structure" in title_lower and "report" in title_lower:
+            return f"06_Code_Structure_Report{suffix}.md"
+        elif "technical" in title_lower and "implementation" in title_lower:
+            return f"07_Technical_Implementation_Guide{suffix}.md"
+        elif "mermaid" in title_lower or "flowchart" in title_lower:
+            return f"08_Mermaid_Flowcharts{suffix}.md"
+=======
         elif "code" in title_lower:
             return f"04_C4_Code_Analysis{suffix}.md"
         elif "mermaid" in title_lower or "flowchart" in title_lower:
             return f"05_Mermaid_Flowcharts{suffix}.md"
+>>>>>>> d93ed6f360e02dca5f11770a9505732d825db2e1
         elif "visão" in title_lower or "geral" in title_lower:
             return f"01_visao_geral{suffix}.md"
         elif "instalação" in title_lower or "guia" in title_lower:
@@ -1911,6 +2776,7 @@ class DocAgentLangGraph:
         self.agents = DocumentationAgents(self.llm_manager)
         self.graph = None
         self.app = None
+        self.mermaid_generator = None
         self._build_graph()
         logger.info("DocAgent LangGraph inicializado")
     
@@ -1940,6 +2806,9 @@ class DocAgentLangGraph:
             # Compilar com memória
             memory = MemorySaver()
             self.app = workflow.compile(checkpointer=memory)
+            
+            # Inicializar gerador Mermaid com o workflow
+            self.mermaid_generator = MermaidGenerator(self.app)
             
             logger.info("Grafo LangGraph construído com sucesso")
             
@@ -2233,14 +3102,14 @@ async def download_all_docs():
         if not docs_dir.exists():
             raise HTTPException(status_code=404, detail="Nenhum documento encontrado")
         
-        doc_files = list(docs_dir.glob("*.md")) + list(docs_dir.glob("*.json"))
+        doc_files = list(docs_dir.glob("*.md")) + list(docs_dir.glob("*.json")) + list(docs_dir.glob("*.png"))
         
         if not doc_files:
             raise HTTPException(status_code=404, detail="Nenhum documento disponível")
         
         # Criar ZIP
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        zip_filename = f"docagent_langgraph_{timestamp}.zip"
+        zip_filename = f"skyone_docagent_{timestamp}.zip"
         zip_path = docs_dir / zip_filename
         
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -2255,6 +3124,164 @@ async def download_all_docs():
         
     except Exception as e:
         logger.error(f"Erro ao criar ZIP: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/generate-mermaid-chart")
+async def generate_mermaid_chart():
+    """Gera diagrama Mermaid do workflow como imagem SVG"""
+    try:
+        # Gerar diagrama do workflow Skyone DocAgent
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        chart_filename = f"skyone_workflow_chart_{timestamp}.html"
+        chart_path = Path("docs") / chart_filename
+        
+        # HTML com Mermaid incorporado para visualização como imagem
+        chart_content = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skyone DocAgent - Workflow Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <style>
+        body {{
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1a365d 0%, #4a90e2 100%);
+            font-family: 'Arial', sans-serif;
+            color: white;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }}
+        .header {{
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1a365d;
+        }}
+        .mermaid {{
+            text-align: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #1a365d;
+        }}
+        .footer {{
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Skyone DocAgent - Workflow Chart</h1>
+            <p>Fluxo completo de documentação C4 + Análise Detalhada</p>
+            <p><strong>Gerado em:</strong> {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}</p>
+        </div>
+        
+        <div class="mermaid">
+flowchart TD
+    A[🚀 Início] --> B[🧠 Configurar Modelo IA]
+    B --> C[📁 Selecionar Diretório Local]
+    C --> D[🔍 Analisar Estrutura]
+    D --> E[📋 Gerar Plano C4]
+    
+    E --> F[🌐 C4 Context Diagram]
+    F --> G[📦 C4 Container Diagram]
+    G --> H[🧩 C4 Component Diagram]
+    H --> I[💻 C4 Code Analysis]
+    
+    I --> J[🔬 Detailed Code Analysis]
+    J --> K[📊 Structure Report]
+    K --> L[🛠️ Implementation Guide]
+    L --> M[🔄 Mermaid Flowcharts]
+    
+    M --> N[✅ Documentação Completa]
+    N --> O[📥 Download ZIP]
+    
+    subgraph "Fase 1: Preparação"
+        A
+        B
+        C
+        D
+        E
+    end
+    
+    subgraph "Fase 2: Arquitetura C4"
+        F
+        G
+        H
+        I
+    end
+    
+    subgraph "Fase 3: Análise Detalhada"
+        J
+        K
+        L
+        M
+    end
+    
+    subgraph "Fase 4: Finalização"
+        N
+        O
+    end
+    
+    style A fill:#1a365d,stroke:#fff,stroke-width:3px,color:#fff
+    style O fill:#4a90e2,stroke:#fff,stroke-width:3px,color:#fff
+    style F fill:#e1f5fe,stroke:#1a365d,stroke-width:2px
+    style G fill:#e1f5fe,stroke:#1a365d,stroke-width:2px
+    style H fill:#e1f5fe,stroke:#1a365d,stroke-width:2px
+    style I fill:#e1f5fe,stroke:#1a365d,stroke-width:2px
+    style J fill:#e8f5e8,stroke:#4a90e2,stroke-width:2px
+    style K fill:#e8f5e8,stroke:#4a90e2,stroke-width:2px
+    style L fill:#e8f5e8,stroke:#4a90e2,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#4a90e2,stroke-width:2px
+        </div>
+        
+        <div class="footer">
+            <p><strong>Skyone DocAgent v3.0</strong> • Documentação Automática com IA</p>
+            <p>C4 Architecture + Análise Detalhada • 8 Documentos Técnicos</p>
+            <p><em>Para salvar como imagem: Clique com botão direito → "Salvar imagem como..."</em></p>
+        </div>
+    </div>
+    
+    <script>
+        mermaid.initialize({{
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {{
+                primaryColor: '#1a365d',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#4a90e2',
+                lineColor: '#2d5a87'
+            }}
+        }});
+    </script>
+</body>
+</html>"""
+        
+        # Salvar arquivo HTML
+        with open(chart_path, 'w', encoding='utf-8') as f:
+            f.write(chart_content)
+        
+        logger.info(f"Chart HTML gerado: {chart_filename}")
+        
+        return FileResponse(
+            chart_path,
+            filename=chart_filename,
+            media_type="text/html"
+        )
+        
+    except Exception as e:
+        logger.error(f"Erro ao gerar chart: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 class ModelSelectionRequest(BaseModel):
