@@ -109,6 +109,7 @@
             <!-- Current Model -->
             <div class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
                 <span class="text-sm text-gray-700">Modelo: <span id="currentModelText" class="font-semibold">Nenhum</span></span>
+                <span id="currentModelDisplay" class="text-sm text-gray-700 font-mono bg-gray-200 px-2 py-1 rounded hidden">Nenhum</span>
                 <span id="modelStatus" class="px-2 py-1 bg-gray-200 text-gray-600 rounded text-sm">
                     <i class="fas fa-circle mr-1"></i>Aguardando
                 </span>
@@ -283,18 +284,29 @@
             carregarModelosOllama();
             
             // Event listener para Enter no campo de diretório
-            document.getElementById('projectPath').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    analisarDiretorio();
-                }
-            });
+            const projectPathEl = document.getElementById('projectPath');
+            if (projectPathEl) {
+                projectPathEl.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        analisarDiretorio();
+                    }
+                });
+            }
         });
 
         // Model Management
         async function selecionarOpenAI() {
-            const model = document.getElementById('openaiModel').value;
-            const apiKey = document.getElementById('openaiApiKey').value.trim();
+            const modelEl = document.getElementById('openaiModel');
+            const apiKeyEl = document.getElementById('openaiApiKey');
+            
+            if (!modelEl || !apiKeyEl) {
+                console.error('Elementos OpenAI não encontrados');
+                return;
+            }
+            
+            const model = modelEl.value;
+            const apiKey = apiKeyEl.value.trim();
             
             if (!apiKey) {
                 alert('Por favor, insira sua API Key do OpenAI');
@@ -306,8 +318,16 @@
         }
 
         async function selecionarOllama() {
-            const model = document.getElementById('ollamaModel').value;
-            const baseUrl = document.getElementById('ollamaBaseUrl').value.trim();
+            const modelEl = document.getElementById('ollamaModel');
+            const baseUrlEl = document.getElementById('ollamaBaseUrl');
+            
+            if (!modelEl || !baseUrlEl) {
+                console.error('Elementos Ollama não encontrados');
+                return;
+            }
+            
+            const model = modelEl.value;
+            const baseUrl = baseUrlEl.value.trim();
             
             // Testar e configurar Ollama
             await testarEConfigurarModelo('ollama', model, null, baseUrl);
@@ -317,6 +337,11 @@
             try {
                 // Mostrar status de teste
                 const statusEl = document.getElementById('modelStatus');
+                if (!statusEl) {
+                    console.error('Elemento modelStatus não encontrado');
+                    return;
+                }
+                
                 statusEl.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Testando...';
                 statusEl.className = 'px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm';
                 
@@ -354,8 +379,17 @@
                         currentModel = { provider, model, apiKey, baseUrl };
                         
                         // Atualizar UI
-                        document.getElementById('currentModelText').textContent = `${provider.toUpperCase()} - ${model}`;
-                        document.getElementById('currentModelDisplay').textContent = `${provider}/${model}`;
+                        const currentModelText = document.getElementById('currentModelText');
+                        const currentModelDisplay = document.getElementById('currentModelDisplay');
+                        
+                        if (currentModelText) {
+                            currentModelText.textContent = `${provider.toUpperCase()} - ${model}`;
+                        }
+                        
+                        if (currentModelDisplay) {
+                            currentModelDisplay.textContent = `${provider}/${model}`;
+                            currentModelDisplay.classList.remove('hidden');
+                        }
                         
                         statusEl.innerHTML = '<i class="fas fa-check-circle mr-1"></i>Ativo';
                         statusEl.className = 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm';
@@ -376,8 +410,10 @@
                 console.error('Erro ao configurar modelo:', error);
                 
                 const statusEl = document.getElementById('modelStatus');
-                statusEl.innerHTML = '<i class="fas fa-times-circle mr-1"></i>Erro';
-                statusEl.className = 'px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm';
+                if (statusEl) {
+                    statusEl.innerHTML = '<i class="fas fa-times-circle mr-1"></i>Erro';
+                    statusEl.className = 'px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm';
+                }
                 
                 alert(`❌ Erro ao configurar modelo: ${error.message}`);
             }
@@ -385,7 +421,13 @@
 
         async function verificarOllama() {
             try {
-                const baseUrl = document.getElementById('ollamaBaseUrl').value.trim();
+                const baseUrlEl = document.getElementById('ollamaBaseUrl');
+                if (!baseUrlEl) {
+                    console.warn('Elemento ollamaBaseUrl não encontrado');
+                    return;
+                }
+                
+                const baseUrl = baseUrlEl.value.trim();
                 
                 // Tentar conectar com Ollama
                 const response = await fetch(`${baseUrl}/api/tags`);
@@ -423,6 +465,11 @@
 
         function atualizarModelosOllama(models) {
             const select = document.getElementById('ollamaModel');
+            if (!select) {
+                console.warn('Elemento ollamaModel não encontrado');
+                return;
+            }
+            
             select.innerHTML = '';
             
             if (models.length === 0) {
@@ -450,14 +497,23 @@
                     currentModel = JSON.parse(savedModel);
                     
                     // Atualizar UI
-                    document.getElementById('currentModelText').textContent = 
-                        `${currentModel.provider.toUpperCase()} - ${currentModel.model}`;
-                    document.getElementById('currentModelDisplay').textContent = 
-                        `${currentModel.provider}/${currentModel.model}`;
+                    const currentModelText = document.getElementById('currentModelText');
+                    const currentModelDisplay = document.getElementById('currentModelDisplay');
+                    
+                    if (currentModelText) {
+                        currentModelText.textContent = `${currentModel.provider.toUpperCase()} - ${currentModel.model}`;
+                    }
+                    
+                    if (currentModelDisplay) {
+                        currentModelDisplay.textContent = `${currentModel.provider}/${currentModel.model}`;
+                        currentModelDisplay.classList.remove('hidden');
+                    }
                     
                     const statusEl = document.getElementById('modelStatus');
-                    statusEl.innerHTML = '<i class="fas fa-check-circle mr-1"></i>Ativo';
-                    statusEl.className = 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm';
+                    if (statusEl) {
+                        statusEl.innerHTML = '<i class="fas fa-check-circle mr-1"></i>Ativo';
+                        statusEl.className = 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm';
+                    }
                     
                     console.log(`🔄 Modelo carregado da sessão: ${currentModel.provider}/${currentModel.model}`);
                 }
@@ -467,7 +523,13 @@
         }
 
         async function configurarTokenGitHub() {
-            const token = document.getElementById('githubToken').value.trim();
+            const tokenEl = document.getElementById('githubToken');
+            if (!tokenEl) {
+                console.error('Elemento githubToken não encontrado');
+                return;
+            }
+            
+            const token = tokenEl.value.trim();
             if (!token) {
                 alert('Por favor, insira o token GitHub');
                 return;
@@ -502,7 +564,10 @@
 
         function updateSystemStatus(status) {
             const statusElement = document.getElementById('systemStatus');
-            if (!statusElement) return;
+            if (!statusElement) {
+                console.warn('Elemento systemStatus não encontrado');
+                return;
+            }
 
             switch(status) {
                 case 'healthy':
@@ -522,7 +587,10 @@
 
         function updateLangGraphStatus(enabled) {
             const element = document.getElementById('langGraphStatus');
-            if (!element) return;
+            if (!element) {
+                console.warn('Elemento langGraphStatus não encontrado');
+                return;
+            }
 
             if (enabled) {
                 element.innerHTML = '<i class="fas fa-project-diagram mr-1"></i>LangGraph Ativo';
@@ -535,8 +603,15 @@
 
         // Main Functions
         async function analisarDiretorio() {
-            const projectPath = document.getElementById('projectPath').value.trim();
+            const projectPathEl = document.getElementById('projectPath');
             const btnAnalisar = document.getElementById('btnAnalisar');
+            
+            if (!projectPathEl || !btnAnalisar) {
+                console.error('Elementos necessários não encontrados');
+                return;
+            }
+            
+            const projectPath = projectPathEl.value.trim();
             
             if (!currentModel.provider) {
                 alert('Por favor, selecione um modelo de IA primeiro (OpenAI ou Ollama)');
@@ -551,16 +626,24 @@
             console.log(`🤖 Iniciando análise C4 do diretório: ${projectPath}`);
 
             // Preparar UI
-            document.getElementById('analysisSection').classList.remove('hidden');
-            document.getElementById('analysisResults').classList.add('hidden');
+            const analysisSection = document.getElementById('analysisSection');
+            const analysisResults = document.getElementById('analysisResults');
+            const progressBar = document.getElementById('progressBar');
+            const phaseText = document.getElementById('phaseText');
+            const progressText = document.getElementById('progressText');
+            const statusMessage = document.getElementById('statusMessage');
+            const logs = document.getElementById('logs');
+            
+            if (analysisSection) analysisSection.classList.remove('hidden');
+            if (analysisResults) analysisResults.classList.add('hidden');
 
             // Reset progress
             resetC4Progress();
-            document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('phaseText').textContent = 'Iniciando Análise C4...';
-            document.getElementById('progressText').textContent = '0%';
-            document.getElementById('statusMessage').textContent = 'Preparando análise do diretório local...';
-            document.getElementById('logs').innerHTML = '';
+            if (progressBar) progressBar.style.width = '0%';
+            if (phaseText) phaseText.textContent = 'Iniciando Análise C4...';
+            if (progressText) progressText.textContent = '0%';
+            if (statusMessage) statusMessage.textContent = 'Preparando análise do diretório local...';
+            if (logs) logs.innerHTML = '';
 
             btnAnalisar.disabled = true;
             btnAnalisar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analisando...';
@@ -573,7 +656,10 @@
                     model_name: currentModel.model,
                     max_files: 50,
                     deep_analysis: true,
-                    anonymous: document.getElementById('modoAnonimo')?.checked || true,
+                    anonymous: (() => {
+                        const modoAnonimo = document.getElementById('modoAnonimo');
+                        return modoAnonimo ? modoAnonimo.checked : true;
+                    })(),
                     local_directory: projectPath
                 };
 
@@ -589,21 +675,21 @@
                     // Iniciar polling de status
                     analysisInterval = setInterval(checkAnalysisStatus, 2000);
                     
-                    document.getElementById('phaseText').textContent = 'Análise C4 iniciada';
-                    document.getElementById('progressBar').style.width = '5%';
-                    document.getElementById('progressText').textContent = '5%';
-                    document.getElementById('statusMessage').textContent = 'Executando análise arquitetural C4...';
+                    if (phaseText) phaseText.textContent = 'Análise C4 iniciada';
+                    if (progressBar) progressBar.style.width = '5%';
+                    if (progressText) progressText.textContent = '5%';
+                    if (statusMessage) statusMessage.textContent = 'Executando análise arquitetural C4...';
                     
-                    document.getElementById('analysisSection').scrollIntoView({ behavior: 'smooth' });
+                    if (analysisSection) analysisSection.scrollIntoView({ behavior: 'smooth' });
                 } else {
                     throw new Error(data.message || 'Erro ao iniciar análise');
                 }
             } catch (error) {
                 console.error('❌ Erro ao iniciar análise:', error);
                 
-                document.getElementById('phaseText').textContent = 'Erro na análise';
-                document.getElementById('statusMessage').textContent = `Erro: ${error.message}`;
-                document.getElementById('logs').innerHTML = `<div class="text-red-400">❌ ${error.message}</div>`;
+                if (phaseText) phaseText.textContent = 'Erro na análise';
+                if (statusMessage) statusMessage.textContent = `Erro: ${error.message}`;
+                if (logs) logs.innerHTML = `<div class="text-red-400">❌ ${error.message}</div>`;
             } finally {
                 btnAnalisar.disabled = false;
                 btnAnalisar.innerHTML = '<i class="fas fa-play mr-2"></i>Iniciar Análise C4';
@@ -611,10 +697,15 @@
         }
 
         function resetC4Progress() {
-            document.getElementById('contextStatus').textContent = 'Aguardando';
-            document.getElementById('containerStatus').textContent = 'Aguardando';
-            document.getElementById('componentStatus').textContent = 'Aguardando';
-            document.getElementById('codeStatus').textContent = 'Aguardando';
+            const contextStatus = document.getElementById('contextStatus');
+            const containerStatus = document.getElementById('containerStatus');
+            const componentStatus = document.getElementById('componentStatus');
+            const codeStatus = document.getElementById('codeStatus');
+            
+            if (contextStatus) contextStatus.textContent = 'Aguardando';
+            if (containerStatus) containerStatus.textContent = 'Aguardando';
+            if (componentStatus) componentStatus.textContent = 'Aguardando';
+            if (codeStatus) codeStatus.textContent = 'Aguardando';
         }
 
         function updateC4Progress(phase) {
@@ -622,28 +713,33 @@
             resetC4Progress();
             
             // Update based on current phase
+            const contextStatus = document.getElementById('contextStatus');
+            const containerStatus = document.getElementById('containerStatus');
+            const componentStatus = document.getElementById('componentStatus');
+            const codeStatus = document.getElementById('codeStatus');
+            
             switch(phase.toLowerCase()) {
                 case 'cloned':
                 case 'setup':
-                    document.getElementById('contextStatus').textContent = 'Em andamento';
+                    if (contextStatus) contextStatus.textContent = 'Em andamento';
                     break;
                 case 'analyzed':
                 case 'structure':
-                    document.getElementById('contextStatus').textContent = 'Concluído';
-                    document.getElementById('containerStatus').textContent = 'Em andamento';
+                    if (contextStatus) contextStatus.textContent = 'Concluído';
+                    if (containerStatus) containerStatus.textContent = 'Em andamento';
                     break;
                 case 'planned':
                 case 'planning':
-                    document.getElementById('contextStatus').textContent = 'Concluído';
-                    document.getElementById('containerStatus').textContent = 'Concluído';
-                    document.getElementById('componentStatus').textContent = 'Em andamento';
+                    if (contextStatus) contextStatus.textContent = 'Concluído';
+                    if (containerStatus) containerStatus.textContent = 'Concluído';
+                    if (componentStatus) componentStatus.textContent = 'Em andamento';
                     break;
                 case 'completed':
                 case 'concluído':
-                    document.getElementById('contextStatus').textContent = 'Concluído';
-                    document.getElementById('containerStatus').textContent = 'Concluído';
-                    document.getElementById('componentStatus').textContent = 'Concluído';
-                    document.getElementById('codeStatus').textContent = 'Concluído';
+                    if (contextStatus) contextStatus.textContent = 'Concluído';
+                    if (containerStatus) containerStatus.textContent = 'Concluído';
+                    if (componentStatus) componentStatus.textContent = 'Concluído';
+                    if (codeStatus) codeStatus.textContent = 'Concluído';
                     break;
             }
         }
@@ -662,17 +758,32 @@
             console.log(`🤖 Iniciando análise LangGraph de: ${repoUrl}`);
 
             // Preparar UI
-            document.getElementById('results').classList.add('hidden');
-            document.getElementById('analysisSection').classList.remove('hidden');
-            document.getElementById('analysisResults').classList.add('hidden');
+            const results = document.getElementById('results');
+            const analysisSection = document.getElementById('analysisSection');
+            const analysisResults = document.getElementById('analysisResults');
+            const progressBar = document.getElementById('progressBar');
+            const phaseText = document.getElementById('phaseText');
+            const progressText = document.getElementById('progressText');
+            const statusMessage = document.getElementById('statusMessage');
+            const currentModelDisplay = document.getElementById('currentModelDisplay');
+            const logs = document.getElementById('logs');
+            
+            if (results) results.classList.add('hidden');
+            if (analysisSection) analysisSection.classList.remove('hidden');
+            if (analysisResults) analysisResults.classList.add('hidden');
 
             // Reset progress
-            document.getElementById('progressBar').style.width = '0%';
-            document.getElementById('phaseText').textContent = 'Iniciando LangGraph...';
-            document.getElementById('progressText').textContent = '0%';
-            document.getElementById('statusMessage').textContent = 'Preparando fluxo de agentes...';
-            document.getElementById('currentModelDisplay').textContent = `${currentModel.provider}/${currentModel.model}`;
-            document.getElementById('logs').innerHTML = '';
+            if (progressBar) progressBar.style.width = '0%';
+            if (phaseText) phaseText.textContent = 'Iniciando LangGraph...';
+            if (progressText) progressText.textContent = '0%';
+            if (statusMessage) statusMessage.textContent = 'Preparando fluxo de agentes...';
+            
+            if (currentModelDisplay) {
+                currentModelDisplay.textContent = `${currentModel.provider}/${currentModel.model}`;
+                currentModelDisplay.classList.remove('hidden');
+            }
+            
+            if (logs) logs.innerHTML = '';
 
             try {
                 // Preparar dados da requisição
@@ -682,7 +793,10 @@
                     model_name: currentModel.model,
                     max_files: 50,
                     deep_analysis: true,
-                    anonymous: document.getElementById('modoAnonimo')?.checked || true
+                    anonymous: (() => {
+                        const modoAnonimo = document.getElementById('modoAnonimo');
+                        return modoAnonimo ? modoAnonimo.checked : true;
+                    })()
                 };
                 
                 // Adicionar API key se for OpenAI
@@ -703,21 +817,21 @@
                     // Iniciar polling de status
                     analysisInterval = setInterval(checkAnalysisStatus, 2000);
                     
-                    document.getElementById('phaseText').textContent = 'LangGraph Flow iniciado';
-                    document.getElementById('progressBar').style.width = '5%';
-                    document.getElementById('progressText').textContent = '5%';
-                    document.getElementById('statusMessage').textContent = 'Executando fluxo de agentes...';
+                    if (phaseText) phaseText.textContent = 'LangGraph Flow iniciado';
+                    if (progressBar) progressBar.style.width = '5%';
+                    if (progressText) progressText.textContent = '5%';
+                    if (statusMessage) statusMessage.textContent = 'Executando fluxo de agentes...';
                     
-                    document.getElementById('analysisSection').scrollIntoView({ behavior: 'smooth' });
+                    if (analysisSection) analysisSection.scrollIntoView({ behavior: 'smooth' });
                 } else {
                     throw new Error(data.message || 'Erro ao iniciar análise');
                 }
             } catch (error) {
                 console.error('❌ Erro ao iniciar análise:', error);
                 
-                document.getElementById('phaseText').textContent = 'Erro na análise';
-                document.getElementById('statusMessage').textContent = `Erro: ${error.message}`;
-                document.getElementById('logs').innerHTML = `<div class="text-red-400">❌ ${error.message}</div>`;
+                if (phaseText) phaseText.textContent = 'Erro na análise';
+                if (statusMessage) statusMessage.textContent = `Erro: ${error.message}`;
+                if (logs) logs.innerHTML = `<div class="text-red-400">❌ ${error.message}</div>`;
             }
         }
 
@@ -727,32 +841,45 @@
                 const status = await response.json();
 
                 // Atualizar UI principal
-                document.getElementById('phaseText').textContent = status.phase || 'Processando...';
-                document.getElementById('progressText').textContent = (status.progress || 0) + '%';
-                document.getElementById('progressBar').style.width = (status.progress || 0) + '%';
-                document.getElementById('statusMessage').textContent = status.message || 'Processando...';
+                const phaseText = document.getElementById('phaseText');
+                const progressText = document.getElementById('progressText');
+                const progressBar = document.getElementById('progressBar');
+                const statusMessage = document.getElementById('statusMessage');
+                
+                if (phaseText) phaseText.textContent = status.phase || 'Processando...';
+                if (progressText) progressText.textContent = (status.progress || 0) + '%';
+                if (progressBar) progressBar.style.width = (status.progress || 0) + '%';
+                if (statusMessage) statusMessage.textContent = status.message || 'Processando...';
                 
                 // Atualizar progresso C4 baseado na fase atual
                 updateC4Progress(status.phase || '');
                 
                 // Atualizar logs
                 if (status.logs && status.logs.length > 0) {
-                    const logsHTML = status.logs.map(log => {
-                        const timestamp = new Date().toLocaleTimeString();
-                        const isError = log.includes('❌');
-                        const isSuccess = log.includes('✅');
-                        const isC4 = log.includes('C4') || log.includes('Context') || log.includes('Container') || log.includes('Component');
-                        
-                        let logClass = 'text-green-300';
-                        if (isError) logClass = 'text-red-400';
-                        else if (isSuccess) logClass = 'text-green-400';
-                        else if (isC4) logClass = 'text-blue-400';
-                        
-                        return `<div class="mb-1 ${logClass}">[${timestamp}] ${log}</div>`;
-                    }).join('');
+                    const logsEl = document.getElementById('logs');
+                    const logsContainer = document.getElementById('logsContainer');
                     
-                    document.getElementById('logs').innerHTML = logsHTML;
-                    document.getElementById('logsContainer').scrollTop = document.getElementById('logsContainer').scrollHeight;
+                    if (logsEl) {
+                        const logsHTML = status.logs.map(log => {
+                            const timestamp = new Date().toLocaleTimeString();
+                            const isError = log.includes('❌');
+                            const isSuccess = log.includes('✅');
+                            const isC4 = log.includes('C4') || log.includes('Context') || log.includes('Container') || log.includes('Component');
+                            
+                            let logClass = 'text-green-300';
+                            if (isError) logClass = 'text-red-400';
+                            else if (isSuccess) logClass = 'text-green-400';
+                            else if (isC4) logClass = 'text-blue-400';
+                            
+                            return `<div class="mb-1 ${logClass}">[${timestamp}] ${log}</div>`;
+                        }).join('');
+                        
+                        logsEl.innerHTML = logsHTML;
+                        
+                        if (logsContainer) {
+                            logsContainer.scrollTop = logsContainer.scrollHeight;
+                        }
+                    }
                 }
 
                 // Verificar status final
@@ -771,8 +898,11 @@
                     clearInterval(analysisInterval);
                     analysisInterval = null;
                     
-                    document.getElementById('phaseText').textContent = 'Erro na análise';
-                    document.getElementById('statusMessage').textContent = status.message || 'Erro desconhecido';
+                    const phaseText = document.getElementById('phaseText');
+                    const statusMessage = document.getElementById('statusMessage');
+                    
+                    if (phaseText) phaseText.textContent = 'Erro na análise';
+                    if (statusMessage) statusMessage.textContent = status.message || 'Erro desconhecido';
                 }
                 
             } catch (error) {
@@ -786,8 +916,14 @@
                 const results = await response.json();
 
                 const isLangGraph = results.langgraph_enabled !== false;
+                const resultsContent = document.getElementById('resultsContent');
                 
-                document.getElementById('resultsContent').innerHTML = `
+                if (!resultsContent) {
+                    console.error('Elemento resultsContent não encontrado');
+                    return;
+                }
+                
+                resultsContent.innerHTML = `
                     <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
                         <div class="flex items-center">
                             <i class="fas fa-${isLangGraph ? 'project-diagram' : 'check-circle'} text-green-600 text-2xl mr-3"></i>
@@ -847,21 +983,29 @@
                     </div>
                 `;
 
-                document.getElementById('analysisResults').classList.remove('hidden');
-                document.getElementById('analysisResults').scrollIntoView({ behavior: 'smooth' });
+                const analysisResults = document.getElementById('analysisResults');
+                if (analysisResults) {
+                    analysisResults.classList.remove('hidden');
+                    analysisResults.scrollIntoView({ behavior: 'smooth' });
+                }
                 
             } catch (error) {
                 console.error('❌ Erro ao carregar resultados:', error);
                 
-                document.getElementById('resultsContent').innerHTML = `
-                    <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl mb-3"></i>
-                        <h4 class="font-bold text-red-800 mb-2">Erro ao Carregar Resultados</h4>
-                        <p class="text-red-700">${error.message}</p>
-                    </div>
-                `;
+                if (resultsContent) {
+                    resultsContent.innerHTML = `
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-2xl mb-3"></i>
+                            <h4 class="font-bold text-red-800 mb-2">Erro ao Carregar Resultados</h4>
+                            <p class="text-red-700">${error.message}</p>
+                        </div>
+                    `;
+                }
                 
-                document.getElementById('analysisResults').classList.remove('hidden');
+                const analysisResults = document.getElementById('analysisResults');
+                if (analysisResults) {
+                    analysisResults.classList.remove('hidden');
+                }
             }
         }
 
@@ -870,12 +1014,15 @@
         // Event listeners simplificados
         document.addEventListener('DOMContentLoaded', function() {
             // Event listener para Enter no campo de diretório
-            document.getElementById('projectPath').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    analisarDiretorio();
-                }
-            });
+            const projectPathEl = document.getElementById('projectPath');
+            if (projectPathEl) {
+                projectPathEl.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        analisarDiretorio();
+                    }
+                });
+            }
         });
 
         // Cleanup

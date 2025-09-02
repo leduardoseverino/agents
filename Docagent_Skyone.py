@@ -186,7 +186,7 @@ class AnalysisRequest(BaseModel):
     """Requisição de análise"""
     repo_url: str
     model_provider: str = "ollama"  # "openai" ou "ollama"
-    model_name: str = "qwen2.5:7b"
+    model_name: str = "devstral:latest"
     max_files: int = 50
     deep_analysis: bool = True
     anonymous: bool = True
@@ -992,7 +992,7 @@ class LLMManager:
             # Configuração padrão
             default_config = ModelConfig(
                 provider="ollama",
-                model_name="qwen2.5:7b"
+                model_name="devstral:latest"
             )
             self.configure_model(default_config)
         
@@ -2342,7 +2342,7 @@ async def get_available_models():
             },
             "recommended": {
                 "openai": "gpt-4o",
-                "ollama": ollama_models_detailed[0]["name"] if ollama_models_detailed else "qwen2.5:7b"
+                "ollama": ollama_models_detailed[0]["name"] if ollama_models_detailed else "devstral:latest"
             }
         }
     except Exception as e:
@@ -2586,8 +2586,8 @@ def main():
                 subprocess.run(["git", "--version"], capture_output=True, check=True)
                 print("✅ Git disponível")
             except:
-                print("❌ Git não encontrado")
-                return 1
+                print("⚠️ Git não encontrado - algumas funcionalidades podem não funcionar")
+                print("   Instale Git de: https://git-scm.com/")
             
             # Criar diretórios básicos
             for dir_name in ["docs", "workdir", "static", "templates", "logs"]:
