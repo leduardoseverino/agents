@@ -15,7 +15,7 @@ Características:
 - Sistema de tools avançadas para análise de código
 - Arquitetura C4 Model para documentação arquitetural
 
-Autor: DocAgent Skyone v3.0 LangGraph
+- DocAgent Skyone v3.0 LangGraph 
 """
 
 import os
@@ -1141,7 +1141,16 @@ class LLMManager:
     def __init__(self):
         self.current_config = None
         self.available_models = {
-            "openai": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
+            "openai": [
+                "gpt-4o", 
+                "gpt-4o-mini", 
+                "gpt-4-turbo",
+                "gpt-4",
+                "gpt-3.5-turbo",
+                "gpt-3.5-turbo-16k",
+                "text-davinci-003",
+                "text-davinci-002"
+            ],
             "ollama": []
         }
         self._check_ollama_models()
@@ -1361,10 +1370,10 @@ class DocumentationAgents:
             # Preparar contexto da análise
             structure_info = state.get("file_structure", {})
             
-            # Prompt para planejamento com C4
+            # Prompt para planejamento com C4 e análise detalhada
             planning_prompt = ChatPromptTemplate.from_template("""
 Você é um especialista em documentação técnica e arquitetura C4. Baseado na análise do repositório abaixo, 
-crie um plano detalhado para documentação completa com arquitetura C4 em formato JSON.
+crie um plano detalhado para documentação completa com arquitetura C4 e análise detalhada em formato JSON.
 
 ANÁLISE DO REPOSITÓRIO:
 {structure_analysis}
@@ -2038,17 +2047,15 @@ INSTRUÇÕES CRÍTICAS:
 
 ```mermaid
 flowchart TD
-    Start([Inicio do Sistema]) --> Init[Inicializacao]
-    Init --> Config[Carregar Configuracao]
-    Config --> Main[Funcao Principal]
-    Main --> Process[Processar Dados]
-    Process --> Output[Gerar Saida]
-    Output --> End([Fim])
+    [Para cada função/processo REAL identificado, crie um nó]
+    [Exemplo: A[FuncaoRealPrincipal] --> B[FuncaoRealSecundaria]]
+    [Use nomes REAIS das funções da análise]
     
-    style Start fill:#e1f5fe
-    style End fill:#c8e6c9
-    style Main fill:#f3e5f5
-    style Process fill:#fff3e0
+    [Conecte baseado nas chamadas de função REAIS identificadas]
+    [Adicione decisões baseadas em condicionais REAIS do código]
+    
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
 ```
 
 ### Fluxograma de Processamento de Dados
@@ -2056,16 +2063,13 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Input[Entrada de Dados] --> Validate[Validar Dados]
-    Validate --> Transform[Transformar]
-    Transform --> Store[Armazenar]
-    Store --> Output[Saída]
+    [Baseado nos fluxos REAIS de dados identificados]
+    [Use funções REAIS que manipulam dados]
     
-    %% Substitua pelos processos REAIS identificados na análise
-    %% Use nomes REAIS das funções que manipulam dados
-    
-    style Input fill:#e3f2fd
-    style Output fill:#e8f5e8
+    subgraph "Módulo Real"
+        [FuncaoRealEntrada] --> [FuncaoRealProcessamento]
+        [FuncaoRealProcessamento] --> [FuncaoRealSaida]
+    end
 ```
 
 ### Fluxograma de Interação entre Módulos
@@ -2073,22 +2077,21 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    subgraph "Módulo Principal"
-        MainFunc[Função Principal]
-        Helper[Função Auxiliar]
+    [Para cada arquivo/módulo REAL:]
+    
+    subgraph "[NomeModuloReal1]"
+        [FuncaoReal1]
+        [FuncaoReal2]
     end
     
-    subgraph "Módulo Secundário"
-        SecFunc[Função Secundária]
-        Utils[Utilitários]
+    subgraph "[NomeModuloReal2]"
+        [FuncaoReal3]
+        [FuncaoReal4]
     end
     
-    %% Conecte baseado nos imports REAIS da análise
-    MainFunc --> SecFunc
-    Helper --> Utils
-    
-    style MainFunc fill:#f3e5f5
-    style SecFunc fill:#e8f5e8
+    [Conecte baseado nos imports REAIS]
+    [FuncaoReal1] --> [FuncaoReal3]
+    [FuncaoReal2] --> [FuncaoReal4]
 ```
 
 ### Fluxograma de Tratamento de Erros
@@ -2096,17 +2099,7 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-    Try[Executar Operacao] --> Success{{Sucesso}}
-    Success -->|Sim| Continue[Continuar]
-    Success -->|Nao| Catch[Capturar Erro]
-    Catch --> Log[Registrar Erro]
-    Log --> Fallback[Acao de Fallback]
-    Fallback --> End[Fim]
-    Continue --> End
-    
-    style Try fill:#e3f2fd
-    style Catch fill:#ffebee
-    style End fill:#e8f5e8
+    [Baseado em try/catch ou tratamento de erro REAL encontrado]
 ```
 
 ### Fluxograma de Configuração e Inicialização
@@ -2114,15 +2107,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Start([Inicio]) --> LoadEnv[Carregar Variaveis de Ambiente]
-    LoadEnv --> ReadConfig[Ler Arquivos de Configuracao]
-    ReadConfig --> Validate[Validar Configuracoes]
-    Validate --> Setup[Configurar Sistema]
-    Setup --> Ready[Sistema Pronto]
-    
-    style Start fill:#e1f5fe
-    style Ready fill:#c8e6c9
-    style Setup fill:#f3e5f5
+    [Baseado nos arquivos de configuração REAIS encontrados]
+    [Use funções REAIS de inicialização identificadas]
 ```
 
 ## 📋 Descrição dos Fluxogramas
@@ -3222,6 +3208,17 @@ async def get_available_models():
         
         # Obter modelos Ollama detalhados
         ollama_models_detailed = doc_agent.llm_manager.get_ollama_models_detailed()
+        
+        # Se ollama_detailed estiver vazio, tentar converter da lista simples
+        if not ollama_models_detailed and available.get("ollama"):
+            ollama_models_detailed = [
+                {
+                    "name": model,
+                    "size": "Tamanho desconhecido",
+                    "display_name": model
+                }
+                for model in available["ollama"]
+            ]
         
         # Verificar se OpenAI está configurada
         openai_configured = bool(os.environ.get("OPENAI_API_KEY"))
