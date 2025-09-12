@@ -37,6 +37,36 @@ from typing import Dict, List, Optional, Any, Union, TypedDict, Annotated
 from dataclasses import dataclass, asdict
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
+from contextlib import asynccontextmanager
+
+# Carregar variáveis de ambiente primeiro
+try:
+    from dotenv import load_dotenv
+    load_dotenv()  # Carrega variáveis do arquivo .env
+    print("✅ Variáveis de ambiente carregadas do .env")
+except ImportError:
+    print("⚠️ python-dotenv não disponível - usando apenas variáveis do sistema")
+    print("   Para instalar: pip install python-dotenv")
+except Exception as e:
+    print(f"⚠️ Erro ao carregar .env: {e}")
+
+# GitHub Enterprise SSO imports
+try:
+    from github_enterprise_sso import (
+        integrate_github_enterprise_sso,
+        GitHubEnterpriseConfig,
+        GitHubEnterpriseAuth,
+        GitHubEnterpriseRepositoryFetcher,
+        AuthenticationMiddleware,
+        setup_environment_variables
+    )
+    GITHUB_ENTERPRISE_AVAILABLE = True
+    print("✅ GitHub Enterprise SSO disponível")
+except ImportError as e:
+    GITHUB_ENTERPRISE_AVAILABLE = False
+    print(f"⚠️ GitHub Enterprise SSO não disponível: {e}")
+    print("   Para habilitar: coloque github_enterprise_sso.py no mesmo diretório")
+
 
 # Importar configurações
 try:
@@ -210,6 +240,8 @@ class FileAnalysis:
 
 class AnalysisRequest(BaseModel):
     """Requisição de análise"""
+    model_config = {"protected_namespaces": ()}
+    
     repo_url: str
     model_provider: str = "ollama"  # "openai" ou "ollama"
     model_name: str = "qwen2.5:7b"
@@ -234,6 +266,8 @@ class SearchRequest(BaseModel):
 
 class ModelConfig(BaseModel):
     """Configuração de modelos"""
+    model_config = {"protected_namespaces": ()}
+    
     provider: str  # "openai" ou "ollama"
     model_name: str
     api_key: Optional[str] = None
@@ -2759,6 +2793,40 @@ class DocAgentLangGraph:
             }
 
 # =============================================================================
+# GERENCIAMENTO DO CICLO DE VIDA DA APLICAÇÃO
+# =============================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Gerenciamento do ciclo de vida da aplicação"""
+    # Startup
+    try:
+        print("🚀 DocAgent LangGraph iniciando...")
+        
+        # Setup GitHub Enterprise SSO se disponível
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            try:
+                github_config = GitHubEnterpriseConfig()
+                if not github_config.is_configured():
+                    print("⚠️ GitHub Enterprise SSO não configurado")
+                    setup_environment_variables()
+                else:
+                    print("✅ GitHub Enterprise SSO configurado e pronto")
+            except Exception as e:
+                print(f"❌ Erro no setup SSO: {e}")
+        
+        # Outras inicializações...
+        print("✅ DocAgent LangGraph pronto!")
+        
+    except Exception as e:
+        print(f"❌ Erro na inicialização: {e}")
+    
+    yield
+    
+    # Shutdown
+    print("👋 Encerrando DocAgent LangGraph...")
+
+# =============================================================================
 # API WEB COM FASTAPI
 # =============================================================================
 
@@ -2772,7 +2840,8 @@ if CONFIG_AVAILABLE:
         title=config.SYSTEM_NAME,
         version=config.VERSION,
         description=config.DESCRIPTION,
-        debug=config.DEBUG
+        debug=config.DEBUG,
+        lifespan=lifespan
     )
     
     # Configurar CORS baseado nas configurações
@@ -2788,7 +2857,8 @@ else:
     app = FastAPI(
         title="DocAgent LangGraph",
         version="3.0",
-        description="Sistema de Documentação Automática com LangGraph, OpenAI e Ollama"
+        description="Sistema de Documentação Automática com LangGraph, OpenAI e Ollama",
+        lifespan=lifespan
     )
     
     # CORS padrão
@@ -2842,12 +2912,74 @@ app_state = {
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    """Página principal"""
+    """Página principal com suporte a autenticação"""
     try:
-        return templates.TemplateResponse("index.html", {"request": request})
+        # Verificar se usuário está autenticado (se SSO estiver habilitado)
+        user_authenticated = False
+        current_user = None
+        
+        if GITHUB_ENTERPRISE_AVAILABLE and "github_enterprise" in app_state:
+            try:
+                auth_middleware = app_state["github_enterprise"]["middleware"]
+                current_user = await auth_middleware.get_current_user(request)
+                user_authenticated = current_user is not None
+            except Exception as e:
+                logger.debug(f"Erro ao verificar autenticação: {e}")
+        
+        # Preparar contexto para template com configuração dinâmica
+        config_status = {
+            "github_enterprise_enabled": False,
+            "github_enterprise_url": "",
+            "openai_configured": bool(os.environ.get("OPENAI_API_KEY")),
+            "github_token_configured": bool(os.environ.get("GITHUB_TOKEN")),
+            "ollama_available": False
+        }
+        
+        # Verificar GitHub Enterprise
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            try:
+                github_config = GitHubEnterpriseConfig()
+                config_status["github_enterprise_enabled"] = github_config.is_configured()
+                config_status["github_enterprise_url"] = github_config.GITHUB_ENTERPRISE_URL
+            except Exception:
+                pass
+        
+        # Verificar Ollama
+        try:
+            if app_state.get("llm_manager"):
+                ollama_models = app_state["llm_manager"].list_ollama_models()
+                config_status["ollama_available"] = len(ollama_models) > 0
+        except Exception:
+            pass
+        
+        template_context = {
+            "request": request,
+            "github_enterprise_enabled": GITHUB_ENTERPRISE_AVAILABLE,
+            "user_authenticated": user_authenticated,
+            "current_user": current_user,
+            "config": config_status
+        }
+        
+        return templates.TemplateResponse("index.html", template_context)
     except Exception as e:
         logger.error(f"Erro ao carregar template: {e}")
-        return HTMLResponse(content="<h1>DocAgent LangGraph</h1><p>Erro ao carregar interface</p>")
+        # Fallback HTML com SSO
+        return HTMLResponse(content=f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>DocAgent LangGraph v3.0</title>
+            <meta charset="utf-8">
+        </head>
+        <body>
+            <h1>🤖 DocAgent LangGraph v3.0</h1>
+            <p>Sistema de Documentação Automática com IA</p>
+            {'<p>✅ GitHub Enterprise SSO Habilitado</p>' if GITHUB_ENTERPRISE_AVAILABLE else ''}
+            <p>⚠️ Erro ao carregar interface completa</p>
+            <p>Verifique se o arquivo templates/index.html existe</p>
+        </body>
+        </html>
+        """)
 
 @app.post("/api/search")
 async def search_repositories(search_request: SearchRequest):
@@ -3145,8 +3277,243 @@ flowchart TD
         logger.error(f"Erro ao gerar chart: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/auth/user")
+async def get_current_user(request: Request):
+    """Obtém informações do usuário autenticado"""
+    try:
+        if GITHUB_ENTERPRISE_AVAILABLE and "github_enterprise" in app_state:
+            auth_middleware = app_state["github_enterprise"]["middleware"]
+            current_user = await auth_middleware.get_current_user(request)
+            
+            if current_user:
+                return {
+                    "success": True,
+                    "user": {
+                        "id": current_user.get("id"),
+                        "login": current_user.get("login"),
+                        "name": current_user.get("name"),
+                        "email": current_user.get("email"),
+                        "avatar_url": current_user.get("avatar_url")
+                    }
+                }
+        
+        raise HTTPException(status_code=401, detail="Não autenticado")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao obter usuário: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/auth/config")
+async def get_auth_config():
+    """Obtém configuração de autenticação"""
+    try:
+        github_enterprise_enabled = GITHUB_ENTERPRISE_AVAILABLE
+        github_enterprise_configured = False
+        
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            from github_enterprise_sso import GitHubEnterpriseConfig
+            config = GitHubEnterpriseConfig()
+            github_enterprise_configured = config.is_configured()
+        
+        return {
+            "success": True,
+            "github_enterprise_enabled": github_enterprise_enabled,
+            "github_enterprise_configured": github_enterprise_configured
+        }
+    except Exception as e:
+        logger.error(f"Erro ao obter config de auth: {e}")
+        return {
+            "success": False,
+            "github_enterprise_enabled": False,
+            "github_enterprise_configured": False
+        }
+
+@app.get("/api/repositories/user")
+async def get_user_repositories(request: Request, include_private: bool = True, include_forks: bool = False):
+    """Obtém repositórios do usuário autenticado"""
+    try:
+        if not GITHUB_ENTERPRISE_AVAILABLE or "github_enterprise" not in app_state:
+            raise HTTPException(status_code=400, detail="GitHub Enterprise SSO não disponível")
+        
+        auth_middleware = app_state["github_enterprise"]["middleware"]
+        current_user = await auth_middleware.get_current_user(request)
+        
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Não autenticado")
+        
+        # Obter access token do usuário
+        access_token = current_user.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=401, detail="Token de acesso não disponível")
+        
+        # Usar o fetcher do GitHub Enterprise
+        repo_fetcher = app_state["github_enterprise"]["repo_fetcher"]
+        repositories = await repo_fetcher.search_user_repositories(
+            access_token=access_token,
+            include_forks=include_forks,
+            include_private=include_private
+        )
+        
+        return {
+            "success": True,
+            "repositories": repositories,
+            "count": len(repositories)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao obter repositórios do usuário: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/repositories/org/{org_name}")
+async def get_org_repositories(org_name: str, request: Request, include_forks: bool = False):
+    """Obtém repositórios de uma organização"""
+    try:
+        if not GITHUB_ENTERPRISE_AVAILABLE or "github_enterprise" not in app_state:
+            raise HTTPException(status_code=400, detail="GitHub Enterprise SSO não disponível")
+        
+        auth_middleware = app_state["github_enterprise"]["middleware"]
+        current_user = await auth_middleware.get_current_user(request)
+        
+        if not current_user:
+            raise HTTPException(status_code=401, detail="Não autenticado")
+        
+        # Obter access token do usuário
+        access_token = current_user.get("access_token")
+        if not access_token:
+            raise HTTPException(status_code=401, detail="Token de acesso não disponível")
+        
+        # Usar o fetcher do GitHub Enterprise
+        repo_fetcher = app_state["github_enterprise"]["repo_fetcher"]
+        repositories = await repo_fetcher.search_organization_repositories(
+            access_token=access_token,
+            org_name=org_name,
+            include_forks=include_forks
+        )
+        
+        return {
+            "success": True,
+            "repositories": repositories,
+            "count": len(repositories),
+            "organization": org_name
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao obter repositórios da organização {org_name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+class GitHubConfigRequest(BaseModel):
+    """Requisição de configuração GitHub Enterprise"""
+    github_enterprise_url: str
+    client_id: str
+    client_secret: str
+
+@app.post("/api/github/configure")
+async def configure_github_enterprise(config_request: GitHubConfigRequest):
+    """Configura GitHub Enterprise dinamicamente"""
+    try:
+        if not GITHUB_ENTERPRISE_AVAILABLE:
+            raise HTTPException(status_code=400, detail="GitHub Enterprise SSO não disponível")
+        
+        # Validar URL
+        if not config_request.github_enterprise_url.startswith(('http://', 'https://')):
+            raise HTTPException(status_code=400, detail="URL inválida")
+        
+        # Atualizar configuração no sistema SSO
+        from github_enterprise_sso import GitHubEnterpriseConfig
+        
+        # Criar nova instância de configuração
+        github_config = GitHubEnterpriseConfig()
+        github_config.GITHUB_ENTERPRISE_URL = config_request.github_enterprise_url
+        github_config.CLIENT_ID = config_request.client_id
+        github_config.CLIENT_SECRET = config_request.client_secret
+        github_config.REDIRECT_URI = "http://localhost:8001/auth/github/callback"
+        
+        # Atualizar no app_state se já existe integração
+        if "github_enterprise" in app_state:
+            # Recriar auth system com nova configuração
+            from github_enterprise_sso import GitHubEnterpriseAuth, GitHubEnterpriseRepositoryFetcher, AuthenticationMiddleware
+            
+            auth_system = GitHubEnterpriseAuth(github_config)
+            repo_fetcher = GitHubEnterpriseRepositoryFetcher(github_config)
+            auth_middleware = AuthenticationMiddleware(auth_system)
+            
+            app_state["github_enterprise"] = {
+                "config": github_config,
+                "auth": auth_system,
+                "repo_fetcher": repo_fetcher,
+                "middleware": auth_middleware
+            }
+        
+        logger.info(f"Configuração GitHub Enterprise atualizada: {config_request.github_enterprise_url}")
+        
+        return {
+            "success": True,
+            "message": "Configuração GitHub Enterprise salva com sucesso",
+            "config": {
+                "github_enterprise_url": config_request.github_enterprise_url,
+                "client_id": config_request.client_id[:10] + "...",  # Mostrar apenas parte do ID
+                "configured": True
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao configurar GitHub Enterprise: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/github/test-config")
+async def test_github_config(config_request: GitHubConfigRequest):
+    """Testa configuração GitHub Enterprise"""
+    try:
+        import httpx
+        
+        # Testar se a URL é acessível
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                response = await client.get(f"{config_request.github_enterprise_url}/api/v3")
+                if response.status_code == 200:
+                    api_data = response.json()
+                    return {
+                        "success": True,
+                        "message": "Configuração válida",
+                        "server_info": {
+                            "version": api_data.get("version", "unknown"),
+                            "url": config_request.github_enterprise_url
+                        }
+                    }
+                else:
+                    return {
+                        "success": False,
+                        "error": f"Servidor retornou status {response.status_code}"
+                    }
+            except httpx.TimeoutException:
+                return {
+                    "success": False,
+                    "error": "Timeout - Servidor não responde"
+                }
+            except Exception as e:
+                return {
+                    "success": False,
+                    "error": f"Erro de conexão: {str(e)}"
+                }
+                
+    except Exception as e:
+        logger.error(f"Erro ao testar configuração: {e}")
+        return {
+            "success": False,
+            "error": f"Erro interno: {str(e)}"
+        }
+
 class ModelSelectionRequest(BaseModel):
     """Requisição para configurar modelo"""
+    model_config = {"protected_namespaces": ()}
+    
     provider: str  # "openai" ou "ollama"
     model_name: str
     api_key: Optional[str] = None
@@ -3198,6 +3565,44 @@ async def configure_model(model_request: ModelSelectionRequest):
     except Exception as e:
         logger.error(f"Erro ao configurar modelo: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/sso/setup")
+async def sso_setup_guide():
+    """Guia de configuração do GitHub Enterprise SSO"""
+    if not GITHUB_ENTERPRISE_AVAILABLE:
+        return {
+            "available": False,
+            "message": "GitHub Enterprise SSO não disponível",
+            "requirements": [
+                "pip install httpx pyjwt",
+                "Adicionar github_enterprise_sso.py ao projeto"
+            ]
+        }
+    
+    github_config = GitHubEnterpriseConfig()
+    
+    return {
+        "available": True,
+        "configured": github_config.is_configured(),
+        "github_enterprise_url": github_config.GITHUB_ENTERPRISE_URL,
+        "client_id_configured": bool(github_config.CLIENT_ID),
+        "client_secret_configured": bool(github_config.CLIENT_SECRET),
+        "redirect_uri": github_config.REDIRECT_URI,
+        "required_env_vars": [
+            "GITHUB_ENTERPRISE_URL",
+            "GITHUB_ENTERPRISE_CLIENT_ID", 
+            "GITHUB_ENTERPRISE_CLIENT_SECRET",
+            "GITHUB_ENTERPRISE_REDIRECT_URI"
+        ],
+        "setup_instructions": [
+            "1. Acesse seu GitHub Enterprise em Settings > Developer settings > OAuth Apps",
+            "2. Crie uma nova OAuth App",
+            "3. Configure Homepage URL como http://localhost:8001",
+            "4. Configure Authorization callback URL como http://localhost:8001/auth/github/callback",
+            "5. Configure as variáveis de ambiente com Client ID e Client Secret",
+            "6. Reinicie o DocAgent"
+        ]
+    }
 
 @app.get("/api/models/available")
 async def get_available_models():
@@ -3305,15 +3710,31 @@ async def test_model_connection(model_request: ModelSelectionRequest):
 
 @app.get("/health")
 async def health_check():
-    """Verificação de saúde"""
+    """Verificação de saúde com suporte a SSO"""
     try:
         checks = {
             "langgraph_available": LANGGRAPH_AVAILABLE,
             "doc_agent_ready": app_state["doc_agent"] is not None,
             "github_fetcher_ready": app_state["github_fetcher"] is not None,
             "docs_directory": Path("docs").exists(),
-            "workdir_exists": Path("workdir").exists()
+            "workdir_exists": Path("workdir").exists(),
+            "github_enterprise_sso_available": GITHUB_ENTERPRISE_AVAILABLE
         }
+        
+        # Verificar configuração SSO se disponível
+        sso_status = {}
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            try:
+                github_config = GitHubEnterpriseConfig()
+                sso_status = {
+                    "github_enterprise_configured": github_config.is_configured(),
+                    "github_enterprise_url": github_config.GITHUB_ENTERPRISE_URL,
+                    "oauth_ready": bool(github_config.CLIENT_ID and github_config.CLIENT_SECRET)
+                }
+                checks["github_enterprise_configured"] = github_config.is_configured()
+            except Exception as e:
+                sso_status = {"error": str(e)}
+                checks["github_enterprise_configured"] = False
         
         # Verificar status do Ollama
         ollama_status = "unknown"
@@ -3332,6 +3753,7 @@ async def health_check():
             "status": "healthy" if all_healthy else "degraded",
             "checks": checks,
             "langgraph_enabled": LANGGRAPH_AVAILABLE,
+            "github_enterprise_sso": sso_status,
             "model_status": {
                 "ollama_status": ollama_status,
                 "openai_configured": openai_configured
@@ -3344,6 +3766,135 @@ async def health_check():
             "error": str(e),
             "timestamp": datetime.now().isoformat()
         }
+
+# =============================================================================
+# ENDPOINTS DE CONFIGURAÇÃO DINÂMICA
+# =============================================================================
+
+@app.get("/api/config/status")
+async def get_config_status():
+    """Retorna status de configuração para interface dinâmica"""
+    try:
+        # Verificar configurações
+        github_enterprise_enabled = False
+        github_enterprise_url = ""
+        
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            try:
+                github_config = GitHubEnterpriseConfig()
+                github_enterprise_enabled = github_config.is_configured()
+                github_enterprise_url = github_config.GITHUB_ENTERPRISE_URL
+            except Exception:
+                pass
+        
+        # Verificar outras configurações
+        openai_configured = bool(os.environ.get("OPENAI_API_KEY"))
+        github_token_configured = bool(os.environ.get("GITHUB_TOKEN"))
+        
+        # Verificar Ollama
+        ollama_available = False
+        try:
+            if app_state["llm_manager"]:
+                ollama_models = app_state["llm_manager"].list_ollama_models()
+                ollama_available = len(ollama_models) > 0
+        except Exception:
+            pass
+        
+        return {
+            "github_enterprise_enabled": github_enterprise_enabled,
+            "github_enterprise_url": github_enterprise_url,
+            "openai_configured": openai_configured,
+            "github_token_configured": github_token_configured,
+            "ollama_available": ollama_available,
+            "system_ready": all([
+                app_state.get("doc_agent") is not None,
+                app_state.get("github_fetcher") is not None
+            ])
+        }
+    except Exception as e:
+        logger.error(f"Erro ao obter status de configuração: {e}")
+        return {
+            "error": str(e),
+            "github_enterprise_enabled": False,
+            "openai_configured": False,
+            "github_token_configured": False,
+            "ollama_available": False,
+            "system_ready": False
+        }
+
+@app.get("/api/test/openai")
+async def test_openai():
+    """Testa configuração OpenAI"""
+    try:
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            return {"success": False, "message": "OPENAI_API_KEY não configurada"}
+        
+        # Teste simples com OpenAI
+        from langchain_openai import ChatOpenAI
+        llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+        response = llm.invoke("Teste de conexão. Responda apenas: OK")
+        
+        return {
+            "success": True,
+            "message": "OpenAI configurado e funcionando",
+            "response": response.content
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Erro ao testar OpenAI: {str(e)}"
+        }
+
+@app.get("/api/test/github")
+async def test_github():
+    """Testa configuração GitHub"""
+    try:
+        token = os.environ.get("GITHUB_TOKEN")
+        if not token:
+            return {"success": False, "message": "GITHUB_TOKEN não configurado"}
+        
+        # Teste simples com GitHub API
+        import httpx
+        headers = {"Authorization": f"token {token}"}
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get("https://api.github.com/user", headers=headers)
+            
+        if response.status_code == 200:
+            user_data = response.json()
+            return {
+                "success": True,
+                "message": f"GitHub Token válido para usuário: {user_data.get('login', 'Unknown')}",
+                "user": user_data.get('login')
+            }
+        else:
+            return {
+                "success": False,
+                "message": f"Token inválido - Status: {response.status_code}"
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Erro ao testar GitHub: {str(e)}"
+        }
+
+@app.get("/api/logs/download")
+async def download_logs():
+    """Download dos logs do sistema"""
+    try:
+        log_file = Path("logs/docagent.log")
+        if not log_file.exists():
+            raise HTTPException(status_code=404, detail="Arquivo de log não encontrado")
+        
+        return FileResponse(
+            log_file,
+            filename="docagent.log",
+            media_type="text/plain"
+        )
+    except Exception as e:
+        logger.error(f"Erro ao baixar logs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # =============================================================================
 # FUNÇÃO DE ANÁLISE EM BACKGROUND
@@ -3444,14 +3995,15 @@ async def run_langgraph_analysis(analysis_request: AnalysisRequest):
             current_step="Falha"
         )
 
+
 # =============================================================================
 # FUNÇÃO PRINCIPAL
 # =============================================================================
 
 def main():
-    """Função principal"""
+    """Função principal com suporte a GitHub Enterprise SSO"""
     try:
-        print("🚀 Iniciando DocAgent LangGraph v3.0")
+        print("🚀 Iniciando DocAgent LangGraph v3.0 com GitHub Enterprise SSO")
         print("=" * 80)
         
         # Verificar dependências
@@ -3464,6 +4016,20 @@ def main():
             print("❌ FastAPI não disponível")
             print("Execute: pip install fastapi uvicorn jinja2")
             return 1
+        
+        # Verificar se GitHub Enterprise SSO está disponível
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            print("🔐 GitHub Enterprise SSO detectado")
+            # Verificar configuração
+            try:
+                config_test = GitHubEnterpriseConfig()
+                if config_test.is_configured():
+                    print("✅ GitHub Enterprise OAuth configurado")
+                else:
+                    print("⚠️ GitHub Enterprise OAuth não configurado")
+                    print("   Configure as variáveis de ambiente para habilitar SSO")
+            except Exception as e:
+                print(f"⚠️ Erro na configuração GitHub Enterprise: {e}")
         
         # Validar ambiente se configuração disponível
         if CONFIG_AVAILABLE:
@@ -3506,6 +4072,8 @@ def main():
         print("   ✅ Download individual e ZIP completo")
         print("   ✅ Sistema de tools avançadas")
         print("   ✅ Checkpoints para recuperação de estado")
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            print("   ✅ GitHub Enterprise SSO")
         print("="*80)
         
         # Configurações do servidor
@@ -3523,6 +4091,8 @@ def main():
         print(f"   📚 Documentação API:   http://localhost:{port}/docs")
         print(f"   ❤️  Health Check:      http://localhost:{port}/health")
         print(f"   📊 Modelos Disponíveis: http://localhost:{port}/api/models/available")
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            print(f"   🔐 Login GitHub:       http://localhost:{port}/auth/login")
         print("="*80)
         print("🛠️ Configurações:")
         
@@ -3538,6 +4108,16 @@ def main():
             print("   ⚠️  GitHub Token não configurado")
             print("      Para repos privados: export GITHUB_TOKEN=ghp_...")
         
+        # Configurações GitHub Enterprise
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            github_config = GitHubEnterpriseConfig()
+            if github_config.is_configured():
+                print("   ✅ GitHub Enterprise SSO configurado")
+                print(f"      URL: {github_config.GITHUB_ENTERPRISE_URL}")
+            else:
+                print("   ⚠️  GitHub Enterprise SSO não configurado")
+                print("      Configure: GITHUB_ENTERPRISE_CLIENT_ID e GITHUB_ENTERPRISE_CLIENT_SECRET")
+        
         # Verificar Ollama
         try:
             result = subprocess.run(["ollama", "list"], capture_output=True, timeout=3)
@@ -3551,8 +4131,26 @@ def main():
             print("      Instale em: https://ollama.ai/")
         
         print("="*80)
+        
+        # Integrar GitHub Enterprise SSO se disponível
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            print("🔐 Integrando GitHub Enterprise SSO...")
+            try:
+                integration_success = integrate_github_enterprise_sso(app, app_state)
+                if integration_success:
+                    print("✅ GitHub Enterprise SSO integrado com sucesso")
+                else:
+                    print("⚠️ GitHub Enterprise SSO parcialmente integrado")
+            except Exception as e:
+                print(f"❌ Erro na integração SSO: {e}")
+                print("   Continuando sem SSO...")
+        
         print("🌟 Iniciando servidor web...")
         print(f"🎯 Acesse: http://localhost:{port}")
+        if GITHUB_ENTERPRISE_AVAILABLE:
+            github_config = GitHubEnterpriseConfig()
+            if github_config.is_configured():
+                print(f"🔐 Login SSO: http://localhost:{port}/auth/login")
         print("🔧 Pressione Ctrl+C para parar")
         print("="*80)
         
