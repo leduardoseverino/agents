@@ -36,6 +36,40 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-3">
+                    <!-- User Info / Login -->
+                    <div id="userSection" class="flex items-center space-x-3">
+                        <!-- Not Authenticated -->
+                        <div id="notAuthenticatedSection" class="hidden">
+                            <div class="flex items-center space-x-2">
+                                <button onclick="showGitHubConfig()" 
+                                        class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-all flex items-center text-sm">
+                                    <i class="fas fa-cog mr-2"></i>
+                                    Configurar GitHub
+                                </button>
+                                <button id="githubLoginBtn" onclick="initiateGitHubLogin()" 
+                                        class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-all flex items-center disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    <i class="fab fa-github mr-2"></i>
+                                    Login GitHub Enterprise
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Authenticated -->
+                        <div id="authenticatedSection" class="hidden flex items-center space-x-3">
+                            <div class="flex items-center space-x-2">
+                                <img id="userAvatar" src="" alt="Avatar" class="w-8 h-8 rounded-full">
+                                <div class="text-sm">
+                                    <div id="userName" class="font-medium text-skyone"></div>
+                                    <div id="userEmail" class="text-gray-500 text-xs"></div>
+                                </div>
+                            </div>
+                            <button onclick="logout()" 
+                                    class="text-gray-600 hover:text-red-600 transition-colors">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
                     <span id="systemStatus" class="px-3 py-1 bg-gray-200 text-gray-600 rounded-full text-sm font-medium">
                         <i class="fas fa-circle animate-pulse mr-1"></i>
                         Sistema
@@ -60,7 +94,7 @@
                 </h2>
                 <p class="text-xl text-blue-100 max-w-3xl mx-auto">
                     Agente inteligente da Skyone para documentação automática com arquitetura C4 + Análise Detalhada.
-                    Análise completa de projetos locais com IA avançada gerando 8 tipos de documentação.
+                    Análise completa de projetos locais e repositórios GitHub Enterprise com IA avançada gerando 8 tipos de documentação.
                 </p>
             </div>
         </div>
@@ -128,28 +162,92 @@
             </div>
         </div>
 
+        <!-- Repository Selection Section - GitHub Enterprise -->
+        <div id="repositorySection" class="bg-white rounded-2xl shadow-lg p-6 mb-8 hidden">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <i class="fab fa-github text-skyoneAccent text-xl mr-3"></i>
+                    <h3 class="text-xl font-bold text-skyone">Repositórios GitHub Enterprise</h3>
+                </div>
+                <button onclick="loadUserRepositories()" 
+                        class="bg-skyoneAccent text-white px-4 py-2 rounded-lg hover:bg-skyoneLight transition-all">
+                    <i class="fas fa-sync mr-2"></i>
+                    Atualizar Lista
+                </button>
+            </div>
+            
+            <!-- Filters -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" id="includePrivate" class="mr-2 h-4 w-4 text-skyoneAccent" checked>
+                    <span class="text-sm text-gray-700">Incluir repositórios privados</span>
+                </label>
+                <label class="flex items-center">
+                    <input type="checkbox" id="includeForks" class="mr-2 h-4 w-4 text-skyoneAccent">
+                    <span class="text-sm text-gray-700">Incluir forks</span>
+                </label>
+                <div class="flex items-center">
+                    <input type="text" id="orgName" placeholder="Nome da organização..." 
+                           class="flex-1 px-3 py-2 border rounded-lg text-sm mr-2">
+                    <button onclick="loadOrgRepositories()" 
+                            class="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-all text-sm">
+                        <i class="fas fa-building mr-1"></i>
+                        Org
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Repository List -->
+            <div id="repositoryList" class="space-y-3 max-h-80 overflow-y-auto">
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fab fa-github text-4xl mb-3"></i>
+                    <p>Clique em "Atualizar Lista" para carregar seus repositórios</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Directory Selection Section -->
         <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
             <div class="flex items-center mb-4">
                 <i class="fas fa-folder text-skyoneAccent text-xl mr-3"></i>
-                <h3 class="text-xl font-bold text-skyone">Diretório do Projeto</h3>
+                <h3 class="text-xl font-bold text-skyone">Análise de Projeto</h3>
+            </div>
+            
+            <!-- Selected Repository Display -->
+            <div id="selectedRepoDisplay" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center flex-1">
+                        <i class="fab fa-github text-blue-600 mr-3 text-xl"></i>
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-1">
+                                <div id="selectedRepoName" class="font-medium text-blue-800 text-lg"></div>
+                                <span class="private-indicator text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">🌐 Repositório Público</span>
+                            </div>
+                            <div id="selectedRepoDescription" class="text-sm text-blue-600"></div>
+                        </div>
+                    </div>
+                    <button onclick="clearSelectedRepo()" 
+                            class="text-red-500 hover:text-red-700 transition-colors ml-4">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
             </div>
             
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 <div class="lg:col-span-3">
                     <label for="projectPath" class="block text-sm font-medium text-gray-700 mb-2">
-                        Caminho do Projeto Local
+                        Caminho do Projeto Local ou URL do Repositório
                     </label>
-                    <input type="text" id="projectPath" placeholder="/caminho/para/seu/projeto" 
+                    <input type="text" id="projectPath" placeholder="/caminho/para/seu/projeto ou https://github.com/user/repo" 
                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-skyoneAccent">
-                    <p class="text-xs text-gray-500 mt-1">Informe o caminho completo do diretório do projeto</p>
+                    <p class="text-xs text-gray-500 mt-1">Informe o caminho completo do diretório ou selecione um repositório acima</p>
                 </div>
                 <div class="flex flex-col justify-end">
                     <label class="flex items-center mb-3">
                         <input type="checkbox" id="modoAnonimo" class="mr-2 h-4 w-4 text-skyoneAccent" checked>
                         <span class="text-sm text-gray-700">Relatório Anônimo</span>
                     </label>
-                    <button onclick="analisarDiretorio()" id="btnAnalisar"
+                    <button onclick="analisarProjeto()" id="btnAnalisar"
                             class="bg-gradient-to-r from-skyone to-skyoneLight text-white px-6 py-3 rounded-lg hover:from-skyoneLight hover:to-skyoneAccent transition-all font-medium">
                         <i class="fas fa-play mr-2"></i>
                         Análise Completa (C4 + Detalhada)
@@ -157,8 +255,6 @@
                 </div>
             </div>
         </div>
-
-
 
         <!-- Analysis Section -->
         <div id="analysisSection" class="hidden">
@@ -258,28 +354,257 @@
             </div>
         </div>
 
-
-
     </main>
 
     <!-- Footer -->
     <footer class="bg-skyone text-white py-6 mt-12">
         <div class="container mx-auto px-6 text-center">
             <p>&copy; 2024 <strong>Skyone DocAgent</strong> v3.0 - C4 + Análise Detalhada • 8 Documentos</p>
-            <p class="text-blue-200 mt-2">Produto Skyone • IA Avançada • Análise Técnica Profunda</p>
+            <p class="text-blue-200 mt-2">Produto Skyone • IA Avançada • GitHub Enterprise SSO • Análise Técnica Profunda</p>
         </div>
     </footer>
+
+    <!-- GitHub Enterprise Configuration Modal -->
+    <div id="githubConfigModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center">
+                    <i class="fab fa-github text-gray-800 text-2xl mr-3"></i>
+                    <h3 class="text-xl font-bold text-gray-800">Configurar GitHub Enterprise</h3>
+                </div>
+                <button onclick="hideGitHubConfig()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="githubConfigForm" class="space-y-4">
+                <div>
+                    <label for="githubEnterpriseUrl" class="block text-sm font-medium text-gray-700 mb-2">
+                        URL do GitHub Enterprise
+                    </label>
+                    <input type="url" id="githubEnterpriseUrl" 
+                           placeholder="https://github.suaempresa.com"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           required>
+                    <p class="text-xs text-gray-500 mt-1">URL da sua instância GitHub Enterprise</p>
+                </div>
+                
+                <div>
+                    <label for="githubClientId" class="block text-sm font-medium text-gray-700 mb-2">
+                        Client ID
+                    </label>
+                    <input type="text" id="githubClientId" 
+                           placeholder="Seu Client ID do OAuth App"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           required>
+                </div>
+                
+                <div>
+                    <label for="githubClientSecret" class="block text-sm font-medium text-gray-700 mb-2">
+                        Client Secret
+                    </label>
+                    <input type="password" id="githubClientSecret" 
+                           placeholder="Seu Client Secret do OAuth App"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           required>
+                </div>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="text-sm font-medium text-blue-800 mb-2">📋 Instruções OAuth:</h4>
+                    <ol class="text-xs text-blue-700 space-y-1">
+                        <li>1. Acesse GitHub Enterprise → Settings → Developer settings → OAuth Apps</li>
+                        <li>2. Crie nova OAuth App</li>
+                        <li>3. Homepage URL: <code>http://localhost:8001</code></li>
+                        <li>4. Callback URL: <code>http://localhost:8001/auth/github/callback</code></li>
+                        <li>5. Copie Client ID e Client Secret</li>
+                    </ol>
+                </div>
+                
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" onclick="testGitHubConfig()" 
+                            class="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-all font-medium">
+                        <i class="fas fa-check mr-2"></i>
+                        Testar Configuração
+                    </button>
+                    <button type="button" onclick="saveGitHubConfig()" 
+                            class="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-all font-medium">
+                        <i class="fas fa-save mr-2"></i>
+                        Salvar e Usar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
         let repositorios = [];
         let analysisInterval = null;
         let currentModel = { provider: null, model: null };
         let langGraphAvailable = false;
+        let userAuthenticated = false;
+        let currentUser = null;
+        let selectedRepository = null;
+        let gitHubEnterpriseEnabled = false;
+        let gitHubConfig = {
+            url: '',
+            clientId: '',
+            clientSecret: '',
+            configured: false
+        };
+
+        // GitHub Configuration Functions
+        function showGitHubConfig() {
+            // Carregar configuração salva
+            loadGitHubConfig();
+            document.getElementById('githubConfigModal').classList.remove('hidden');
+        }
+
+        function hideGitHubConfig() {
+            document.getElementById('githubConfigModal').classList.add('hidden');
+        }
+
+        function loadGitHubConfig() {
+            // Carregar do localStorage
+            const saved = localStorage.getItem('githubEnterpriseConfig');
+            if (saved) {
+                try {
+                    const config = JSON.parse(saved);
+                    document.getElementById('githubEnterpriseUrl').value = config.url || '';
+                    document.getElementById('githubClientId').value = config.clientId || '';
+                    document.getElementById('githubClientSecret').value = config.clientSecret || '';
+                    
+                    gitHubConfig = {
+                        url: config.url || '',
+                        clientId: config.clientId || '',
+                        clientSecret: config.clientSecret || '',
+                        configured: !!(config.url && config.clientId && config.clientSecret)
+                    };
+                    
+                    updateGitHubLoginButton();
+                } catch (e) {
+                    console.error('Erro ao carregar configuração GitHub:', e);
+                }
+            }
+        }
+
+        function updateGitHubLoginButton() {
+            const loginBtn = document.getElementById('githubLoginBtn');
+            if (gitHubConfig.configured) {
+                loginBtn.disabled = false;
+                loginBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                loginBtn.title = 'Clique para fazer login no GitHub Enterprise';
+            } else {
+                loginBtn.disabled = true;
+                loginBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                loginBtn.title = 'Configure o GitHub Enterprise primeiro';
+            }
+        }
+
+        async function testGitHubConfig() {
+            const url = document.getElementById('githubEnterpriseUrl').value.trim();
+            const clientId = document.getElementById('githubClientId').value.trim();
+            const clientSecret = document.getElementById('githubClientSecret').value.trim();
+
+            if (!url || !clientId || !clientSecret) {
+                showNotification('Preencha todos os campos', 'warning');
+                return;
+            }
+
+            try {
+                showLoading('Testando configuração GitHub Enterprise...');
+                
+                const response = await fetch('/api/github/test-config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        github_enterprise_url: url,
+                        client_id: clientId,
+                        client_secret: clientSecret
+                    })
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    showNotification('Configuração válida! ✅', 'success');
+                } else {
+                    showNotification(`Erro na configuração: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Erro ao testar configuração:', error);
+                showNotification('Erro ao testar configuração', 'error');
+            }
+        }
+
+        async function saveGitHubConfig() {
+            const url = document.getElementById('githubEnterpriseUrl').value.trim();
+            const clientId = document.getElementById('githubClientId').value.trim();
+            const clientSecret = document.getElementById('githubClientSecret').value.trim();
+
+            if (!url || !clientId || !clientSecret) {
+                showNotification('Preencha todos os campos', 'warning');
+                return;
+            }
+
+            try {
+                showLoading('Salvando configuração...');
+
+                // Salvar no localStorage
+                const config = { url, clientId, clientSecret };
+                localStorage.setItem('githubEnterpriseConfig', JSON.stringify(config));
+
+                // Configurar no backend
+                const response = await fetch('/api/github/configure', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        github_enterprise_url: url,
+                        client_id: clientId,
+                        client_secret: clientSecret
+                    })
+                });
+
+                const data = await response.json();
+                hideLoading();
+
+                if (data.success) {
+                    gitHubConfig = {
+                        url: url,
+                        clientId: clientId,
+                        clientSecret: clientSecret,
+                        configured: true
+                    };
+                    
+                    updateGitHubLoginButton();
+                    hideGitHubConfig();
+                    showNotification('Configuração salva com sucesso! ✅', 'success');
+                    
+                    // Mostrar seção de repositórios se autenticado
+                    if (userAuthenticated) {
+                        document.getElementById('repositorySection').classList.remove('hidden');
+                    }
+                } else {
+                    showNotification(`Erro ao salvar: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Erro ao salvar configuração:', error);
+                showNotification('Erro ao salvar configuração', 'error');
+            }
+        }
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🤖 Skyone DocAgent v3.0 carregado!');
+            loadGitHubConfig(); // Carregar configuração salva
             checkSystemStatus();
+            checkAuthStatus();
             carregarModeloSalvo();
             carregarModelosOllama();
             
@@ -287,10 +612,306 @@
             document.getElementById('projectPath').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    analisarDiretorio();
+                    analisarProjeto();
                 }
             });
+
+            // Verificar se há parâmetros de login na URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('login') === 'success') {
+                setTimeout(() => {
+                    alert('✅ Login realizado com sucesso!');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    checkAuthStatus();
+                }, 500);
+            } else if (urlParams.get('login') === 'error') {
+                setTimeout(() => {
+                    const message = urlParams.get('message') || 'Erro no login';
+                    alert(`❌ Erro no login: ${message}`);
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }, 500);
+            }
         });
+
+        // Authentication Functions
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/api/auth/user');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    userAuthenticated = true;
+                    currentUser = data.user;
+                    updateUserInterface(true, data.user);
+                    
+                    // Mostrar seção de repositórios se GitHub Enterprise estiver habilitado
+                    const configResponse = await fetch('/api/auth/config');
+                    const configData = await configResponse.json();
+                    
+                    if (configData.github_enterprise_enabled) {
+                        gitHubEnterpriseEnabled = true;
+                        document.getElementById('repositorySection').classList.remove('hidden');
+                    }
+                } else {
+                    userAuthenticated = false;
+                    currentUser = null;
+                    updateUserInterface(false);
+                    
+                    // Verificar se GitHub Enterprise está configurado
+                    try {
+                        const configResponse = await fetch('/api/auth/config');
+                        const configData = await configResponse.json();
+                        gitHubEnterpriseEnabled = configData.github_enterprise_enabled;
+                        
+                        if (gitHubEnterpriseEnabled) {
+                            updateUserInterface(false, null, true);
+                        }
+                    } catch (e) {
+                        console.log('GitHub Enterprise não configurado');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                userAuthenticated = false;
+                updateUserInterface(false);
+            }
+        }
+
+        function updateUserInterface(authenticated, user = null, showLogin = false) {
+            const notAuthSection = document.getElementById('notAuthenticatedSection');
+            const authSection = document.getElementById('authenticatedSection');
+            
+            if (authenticated && user) {
+                // Usuário autenticado
+                notAuthSection.classList.add('hidden');
+                authSection.classList.remove('hidden');
+                
+                // Atualizar informações do usuário
+                document.getElementById('userName').textContent = user.name || user.username;
+                document.getElementById('userEmail').textContent = user.email || '';
+                
+                if (user.avatar_url) {
+                    document.getElementById('userAvatar').src = user.avatar_url;
+                    document.getElementById('userAvatar').style.display = 'block';
+                } else {
+                    document.getElementById('userAvatar').style.display = 'none';
+                }
+            } else if (showLogin) {
+                // Mostrar botão de login
+                notAuthSection.classList.remove('hidden');
+                authSection.classList.add('hidden');
+            } else {
+                // Não mostrar interface de autenticação
+                notAuthSection.classList.add('hidden');
+                authSection.classList.add('hidden');
+            }
+        }
+
+        async function initiateGitHubLogin() {
+            if (!gitHubConfig.configured) {
+                showNotification('Configure o GitHub Enterprise primeiro', 'warning');
+                showGitHubConfig();
+                return;
+            }
+
+            try {
+                showLoading('Redirecionando para GitHub Enterprise...');
+                
+                const response = await fetch('/auth/login');
+                const data = await response.json();
+                
+                hideLoading();
+                
+                if (data.login_url) {
+                    // Redirecionar para o GitHub Enterprise
+                    window.location.href = data.login_url;
+                } else {
+                    showNotification('Erro ao iniciar login', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Erro ao iniciar login:', error);
+                showNotification('Erro ao iniciar login GitHub Enterprise', 'error');
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/auth/logout', { method: 'POST' });
+                userAuthenticated = false;
+                currentUser = null;
+                selectedRepository = null;
+                
+                updateUserInterface(false, null, gitHubEnterpriseEnabled);
+                document.getElementById('repositorySection').classList.add('hidden');
+                document.getElementById('selectedRepoDisplay').classList.add('hidden');
+                document.getElementById('projectPath').value = '';
+                
+                alert('✅ Logout realizado com sucesso');
+            } catch (error) {
+                console.error('Erro no logout:', error);
+                alert('Erro ao fazer logout');
+            }
+        }
+
+        // Repository Functions
+        async function loadUserRepositories() {
+            if (!userAuthenticated) {
+                showNotification('Faça login primeiro para acessar seus repositórios', 'warning');
+                return;
+            }
+
+            try {
+                showLoading('Carregando seus repositórios do GitHub Enterprise...');
+                
+                const includePrivate = document.getElementById('includePrivate').checked;
+                const includeForks = document.getElementById('includeForks').checked;
+                
+                const response = await fetch(`/api/repositories/user?include_private=${includePrivate}&include_forks=${includeForks}`);
+                const data = await response.json();
+                
+                hideLoading();
+                
+                if (data.success) {
+                    displayRepositories(data.repositories);
+                    showNotification(`${data.count} repositórios carregados com sucesso!`, 'success');
+                } else {
+                    showNotification('Erro ao carregar repositórios', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Erro ao carregar repositórios:', error);
+                if (error.message.includes('401')) {
+                    showNotification('Sessão expirada. Faça login novamente.', 'warning');
+                    logout();
+                } else {
+                    showNotification('Erro ao conectar com GitHub Enterprise', 'error');
+                }
+            }
+        }
+
+        async function loadOrgRepositories() {
+            if (!userAuthenticated) {
+                showNotification('Faça login primeiro para acessar repositórios organizacionais', 'warning');
+                return;
+            }
+
+            const orgName = document.getElementById('orgName').value.trim();
+            if (!orgName) {
+                showNotification('Informe o nome da organização', 'warning');
+                return;
+            }
+
+            try {
+                showLoading(`Carregando repositórios da organização ${orgName}...`);
+                
+                const includeForks = document.getElementById('includeForks').checked;
+                const response = await fetch(`/api/repositories/org/${orgName}?include_forks=${includeForks}`);
+                const data = await response.json();
+                
+                hideLoading();
+                
+                if (data.success) {
+                    displayRepositories(data.repositories);
+                    showNotification(`${data.count} repositórios da organização ${orgName} carregados!`, 'success');
+                } else {
+                    showNotification(`Erro ao carregar repositórios da organização ${orgName}`, 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                console.error('Erro ao carregar repositórios da organização:', error);
+                if (error.message.includes('401')) {
+                    showNotification('Sessão expirada. Faça login novamente.', 'warning');
+                    logout();
+                } else if (error.message.includes('404')) {
+                    showNotification(`Organização ${orgName} não encontrada`, 'error');
+                } else {
+                    showNotification('Erro ao conectar com GitHub Enterprise', 'error');
+                }
+            }
+        }
+
+        function displayRepositories(repositories) {
+            const container = document.getElementById('repositoryList');
+            
+            if (repositories.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-gray-500 py-8">
+                        <i class="fab fa-github text-4xl mb-3"></i>
+                        <p>Nenhum repositório encontrado</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = repositories.map(repo => `
+                <div class="border border-gray-200 rounded-lg p-4 hover:border-skyoneAccent hover:shadow-lg transition-all cursor-pointer"
+                     onclick="selectRepository('${repo.clone_url || repo.html_url}', '${repo.full_name}', '${repo.description || ''}', ${repo.private || false})">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center flex-1">
+                            <i class="fab fa-github text-gray-600 mr-3 text-lg"></i>
+                            <div class="flex-1">
+                                <h4 class="font-medium text-gray-800 text-lg">${repo.full_name}</h4>
+                                <p class="text-sm text-gray-600 mt-1">${repo.description || 'Sem descrição'}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end space-y-1">
+                            ${repo.private ? '<span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">🔒 Privado</span>' : '<span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">🌐 Público</span>'}
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-sm text-gray-500">
+                        <div class="flex items-center space-x-4">
+                            <span class="flex items-center">
+                                <i class="fas fa-star mr-1 text-yellow-500"></i>
+                                ${repo.stargazers_count || repo.stars || 0}
+                            </span>
+                            <span class="flex items-center">
+                                <i class="fas fa-code-branch mr-1 text-blue-500"></i>
+                                ${repo.forks_count || repo.forks || 0}
+                            </span>
+                            ${repo.language ? `<span class="flex items-center"><i class="fas fa-code mr-1"></i>${repo.language}</span>` : ''}
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            ${repo.updated_at ? new Date(repo.updated_at).toLocaleDateString('pt-BR') : 'Atualização desconhecida'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectRepository(cloneUrl, fullName, description, isPrivate = false) {
+            selectedRepository = {
+                clone_url: cloneUrl,
+                full_name: fullName,
+                description: description,
+                private: isPrivate
+            };
+            
+            // Atualizar campo de projeto
+            document.getElementById('projectPath').value = cloneUrl;
+            
+            // Mostrar repositório selecionado
+            document.getElementById('selectedRepoName').textContent = fullName;
+            document.getElementById('selectedRepoDescription').textContent = description;
+            document.getElementById('selectedRepoDisplay').classList.remove('hidden');
+            
+            // Mostrar indicador de repositório privado
+            const privateIndicator = document.querySelector('#selectedRepoDisplay .private-indicator');
+            if (privateIndicator) {
+                privateIndicator.textContent = isPrivate ? '🔒 Repositório Privado' : '🌐 Repositório Público';
+                privateIndicator.className = `text-xs px-2 py-1 rounded-full ${isPrivate ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
+            }
+            
+            showNotification(`Repositório ${fullName} selecionado!`, 'success');
+            
+            console.log('Repositório selecionado:', fullName);
+        }
+
+        function clearSelectedRepo() {
+            selectedRepository = null;
+            document.getElementById('projectPath').value = '';
+            document.getElementById('selectedRepoDisplay').classList.add('hidden');
+        }
 
         // Model Management
         async function selecionarOpenAI() {
@@ -356,13 +977,9 @@
                         
                         // Atualizar UI com verificações de segurança
                         const currentModelTextEl = document.getElementById('currentModelText');
-                        const currentModelDisplayEl = document.getElementById('currentModelDisplay');
                         
                         if (currentModelTextEl) {
                             currentModelTextEl.textContent = `${provider.toUpperCase()} - ${model}`;
-                        }
-                        if (currentModelDisplayEl) {
-                            currentModelDisplayEl.textContent = `${provider}/${model}`;
                         }
                         
                         if (statusEl) {
@@ -583,14 +1200,10 @@
                     
                     // Atualizar UI com verificações de segurança
                     const currentModelTextEl = document.getElementById('currentModelText');
-                    const currentModelDisplayEl = document.getElementById('currentModelDisplay');
                     const statusEl = document.getElementById('modelStatus');
                     
                     if (currentModelTextEl) {
                         currentModelTextEl.textContent = `${currentModel.provider.toUpperCase()} - ${currentModel.model}`;
-                    }
-                    if (currentModelDisplayEl) {
-                        currentModelDisplayEl.textContent = `${currentModel.provider}/${currentModel.model}`;
                     }
                     if (statusEl) {
                         statusEl.innerHTML = '<i class="fas fa-check-circle mr-1"></i>Ativo';
@@ -601,24 +1214,6 @@
                 }
             } catch (error) {
                 console.error('Erro ao carregar modelo salvo:', error);
-            }
-        }
-
-        async function configurarTokenGitHub() {
-            const token = document.getElementById('githubToken').value.trim();
-            if (!token) {
-                alert('Por favor, insira o token GitHub');
-                return;
-            }
-            
-            try {
-                // Configurar token via variável de ambiente (simulado)
-                sessionStorage.setItem('github_token', token);
-                alert('✅ Token GitHub configurado para esta sessão');
-                
-            } catch (error) {
-                console.error('Erro ao configurar token:', error);
-                alert('Erro ao configurar token GitHub');
             }
         }
 
@@ -672,7 +1267,7 @@
         }
 
         // Main Functions
-        async function analisarDiretorio() {
+        async function analisarProjeto() {
             const projectPath = document.getElementById('projectPath').value.trim();
             const btnAnalisar = document.getElementById('btnAnalisar');
             
@@ -682,11 +1277,11 @@
             }
             
             if (!projectPath) {
-                alert('Por favor, informe o caminho do diretório do projeto');
+                alert('Por favor, informe o caminho do diretório ou selecione um repositório');
                 return;
             }
 
-            console.log(`🤖 Iniciando análise C4 do diretório: ${projectPath}`);
+            console.log(`🤖 Iniciando análise C4 de: ${projectPath}`);
 
             // Preparar UI
             document.getElementById('analysisSection').classList.remove('hidden');
@@ -697,22 +1292,22 @@
             document.getElementById('progressBar').style.width = '0%';
             document.getElementById('phaseText').textContent = 'Iniciando Análise C4...';
             document.getElementById('progressText').textContent = '0%';
-            document.getElementById('statusMessage').textContent = 'Preparando análise do diretório local...';
+            document.getElementById('statusMessage').textContent = 'Preparando análise...';
             document.getElementById('logs').innerHTML = '';
 
             btnAnalisar.disabled = true;
             btnAnalisar.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analisando...';
 
             try {
-                // Preparar dados da requisição para diretório local
+                // Preparar dados da requisição
                 const requestData = {
-                    repo_url: `file://${projectPath}`, // Indicar que é um diretório local
+                    repo_url: projectPath.startsWith('/') ? `file://${projectPath}` : projectPath,
                     model_provider: currentModel.provider,
                     model_name: currentModel.model,
                     max_files: 50,
                     deep_analysis: true,
                     anonymous: document.getElementById('modoAnonimo')?.checked || true,
-                    local_directory: projectPath
+                    local_directory: projectPath.startsWith('/') ? projectPath : null
                 };
 
                 const response = await fetch('/api/analyze', {
@@ -819,8 +1414,6 @@
             }
         }
 
-
-
         async function checkAnalysisStatus() {
             try {
                 const response = await fetch('/api/status');
@@ -921,6 +1514,12 @@
                                     <span class="text-purple-700">Tipos:</span>
                                     <span class="font-medium text-sm">C4 + Análise Detalhada</span>
                                 </div>
+                                ${selectedRepository ? `
+                                <div class="flex justify-between">
+                                    <span class="text-purple-700">Repositório:</span>
+                                    <span class="font-medium text-sm">${selectedRepository.full_name}</span>
+                                </div>
+                                ` : ''}
                             </div>
                         </div>
                         
@@ -1017,17 +1616,6 @@
                 document.getElementById('analysisResults').classList.remove('hidden');
             }
         }
-
-        // Event listeners simplificados
-        document.addEventListener('DOMContentLoaded', function() {
-            // Event listener para Enter no campo de diretório
-            document.getElementById('projectPath').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    analisarDiretorio();
-                }
-            });
-        });
 
         // Cleanup
         window.addEventListener('beforeunload', function() {
