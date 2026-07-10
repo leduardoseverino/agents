@@ -1,4 +1,4 @@
-# 🚀 Skyone DocAgent v3.0
+# 🚀 DocAgent v3.0
 
 **Plataforma Avançada de Análise e Documentação Automática com Arquitetura C4**
 
